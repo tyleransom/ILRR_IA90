@@ -1,0 +1,33 @@
+\begin{table}[ht]
+\caption{Remove time trends}
+\label{tab:ta0}
+\centering
+\begin{threeparttable}
+\begin{tabular}{lccc}
+\toprule 
+       & Black           & White        & White       \\
+       & Male            & Male         & Female      \\
+Effect & STEM BA         & STEM Occ.    & Prior Yr Empl.\\
+\midrule 
+\multicolumn{4}{l}{\emph{Panel A: Baseline result}}\\ 
+Foreign STEM Exposure & -0.085** & -0.058*** & -0.037** \\ 
+ &  (0.036)        & (0.014)        & (0.016) \\ 
+Control mean &  [0.249]        & [0.292]       & [0.863] \\ 
+\emph{N} &     14,354          &    72,933          &    36,519 \\ 
+                         &                              &                              &\\
+\multicolumn{4}{l}{\emph{Panel B: No state trends}}\\ 
+Foreign STEM Exposure & -0.047*** & -0.016* & 0.005  \\ 
+ &  (0.017)        & (0.009)        & (0.007) \\ 
+Control mean &  [0.249]        & [0.292]       & [0.863] \\ 
+\emph{N} &     14,354          &    72,933          &    36,519 \\ 
+                         &                              &                              &\\
+\multicolumn{4}{l}{\emph{Panel C: Model selection of linear \& quadratic state trends}}\\ 
+Foreign STEM Exposure & -0.052*** & -0.026* & 0.005  \\ 
+ &  (0.017)        & (0.013)        & (0.010) \\ 
+Control mean &  [0.249]        & [0.292]       & [0.863] \\ 
+\emph{N} &     14,354          &    72,933          &    36,519 \\ 
+\bottomrule 
+\end{tabular} 
+\footnotesize Notes: Panel A reproduces the estimates from column 1 of Table \ref{tab:STEMgradUncond} Panel C, the column 3 of Table \ref{tab:STEMoccEmpAll} Panel B, and the column 4 of Table \ref{tab:ProbLY} Panel B. Panel B presents estimates without state trends. Panels C and D presents estimates using the model selection method of \citet{belloni_al2014} and implementation by \citet{pdslasso18}, where the model selects among linear and quadratic state trends. *Statistically significant at the .10 level; ** at the .05 level; *** at the .01 level.
+\end{threeparttable} 
+\end{table} 

@@ -1,0 +1,593 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Data/cr_foreign_share
+> s.log
+  log type:  text
+ opened on:  19 Oct 2018, 15:12:41
+
+. 
+. !gunzip -fc forshr_vars_80_10.dat.gz > tmp.dat
+
+
+. 
+. *1980 (5%), 1990 (5%), 2000 (5%), 2010 (ACS) samples
+. set more off
+
+. clear
+
+. quietly infix                ///
+>   int     year      1-4      ///
+>   byte    datanum   5-6      ///
+>   double  serial    7-14     ///
+>   float   hhwt      15-24    ///
+>   byte    statefip  25-26    ///
+>   int     metarea   27-29    ///
+>   int     metaread  30-33    ///
+>   long    puma      34-38    ///
+>   int     conspuma  39-41    ///
+>   byte    gq        42-42    ///
+>   int     pernum    43-46    ///
+>   float   perwt     47-56    ///
+>   byte    sex       57-57    ///
+>   int     age       58-60    ///
+>   byte    marst     61-61    ///
+>   byte    race      62-62    ///
+>   int     raced     63-65    ///
+>   byte    hispan    66-66    ///
+>   int     hispand   67-69    ///
+>   int     bpl       70-72    ///
+>   long    bpld      73-77    ///
+>   byte    citizen   78-78    ///
+>   byte    school    79-79    ///
+>   byte    educ      80-81    ///
+>   int     educd     82-84    ///
+>   byte    empstat   85-85    ///
+>   byte    empstatd  86-87    ///
+>   int     occ1990   88-90    ///
+>   byte    wkswork1  91-92    ///
+>   byte    wkswork2  93-93    ///
+>   byte    uhrswork  94-95    ///
+>   long    incbus    96-101   ///
+>   long    incfarm   102-107  ///
+>   long    incearn   108-114  ///
+>   byte    pwstate2  115-116  ///
+>   int     pwcntygp  117-119  ///
+>   int     pwpuma    120-122  ///
+>   long    pwpuma00  123-127  ///
+>   byte    quhrswor  128-128  ///
+>   byte    qwkswork  129-129  ///
+>   byte    qincbus   130-130  ///
+>   byte    qincfarm  131-131  ///
+>   byte    qincwage  132-132  ///
+>   using tmp.dat  ///
+>   if age>=25 & age<=59
+
+. *1980-2000 census 5% and 2010 ACS; ages 18+; no other restrictions
+. 
+. !rm -f tmp.dat
+
+
+. 
+. replace perwt    = perwt    / 100
+(18,787,919 real changes made)
+
+. 
+. gen     ed16plus=0
+
+. gen     foreignborn=0
+
+. replace ed16plus=1     if educd>=100
+(4,398,403 real changes made)
+
+. replace foreignborn=1  if bpl>56
+(2,257,889 real changes made)
+
+. gen  native=1-foreignborn
+
+. drop bpl
+
+. gen  bpl=statefip
+
+. 
+. gen     stemocc=occ1990
+
+. recode  stemocc  44/64=1 66/83=1 229=1                  else=0
+(stemocc: 18790247 changes made)
+
+. gen     nonstem=1-stemocc
+
+. gen     stemocc2=occ1990
+
+. recode  stemocc2 44/64=1 66/83=1 229=1  84/89=1 96=1  113/116=1 127/128=1 els
+> e=0
+(stemocc2: 18790247 changes made)
+
+. gen     nonstem2=1-stemocc2
+
+. 
+. bysort bpl year: egen double totwt_yr_2559              =total(perwt)
+
+. bysort bpl year: egen double n_ed16plus_all_yr_2559     =total(perwt*ed16plus
+>         )
+
+. bysort bpl year: egen double n_ed16plus_for_yr_2559     =total(perwt*ed16plus
+> *foreign)
+
+. bysort bpl year: egen double n_16pl_stemo_all_yr_2559   =total(perwt*ed16plus
+> *stemocc         )
+
+. bysort bpl year: egen double n_16pl_stem2_all_yr_2559   =total(perwt*ed16plus
+> *stemocc2        )
+
+. bysort bpl year: egen double n_16pl_stemo_for_yr_2559   =total(perwt*ed16plus
+> *foreign*stemocc )
+
+. bysort bpl year: egen double n_16pl_stem2_for_yr_2559   =total(perwt*ed16plus
+> *foreign*stemocc2)
+
+. bysort bpl year: egen double n_16pl_nstem_all_yr_2559   =total(perwt*ed16plus
+> *nonstem         )
+
+. bysort bpl year: egen double n_16pl_nstem2_all_yr_2559  =total(perwt*ed16plus
+> *nonstem2        )
+
+. bysort bpl year: egen double n_16pl_nstem_for_yr_2559   =total(perwt*ed16plus
+> *foreign*nonstem )
+
+. bysort bpl year: egen double n_16pl_nstem2_for_yr_2559  =total(perwt*ed16plus
+> *foreign*nonstem2)
+
+. bysort bpl year: egen double pct_ed16plus_all_yr_2559   =total(perwt*ed16plus
+>         /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_ed16plus_for_yr_2559   =total(perwt*ed16plus
+> *foreign/totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_stemo_all_yr_2559 =total(perwt*ed16plus
+> *stemocc         /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_stem2_all_yr_2559 =total(perwt*ed16plus
+> *stemocc2        /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_stemo_for_yr_2559 =total(perwt*ed16plus
+> *foreign*stemocc /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_stem2_for_yr_2559 =total(perwt*ed16plus
+> *foreign*stemocc2/totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_nstem_all_yr_2559 =total(perwt*ed16plus
+> *nonstem         /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_nstem2_all_yr_2559=total(perwt*ed16plus
+> *nonstem2        /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_nstem_for_yr_2559 =total(perwt*ed16plus
+> *foreign*nonstem /totwt_yr_2559)
+
+. bysort bpl year: egen double pct_16pl_nstem2_for_yr_2559=total(perwt*ed16plus
+> *foreign*nonstem2/totwt_yr_2559)
+
+. * bysort bpl year: egen double totwt_nstem_80_2559       =total(perwt*nonstem
+> )
+. * bysort bpl year: egen double pct_nstem_foreign_80_2559 =total(perwt*nonstem
+> *foreignborn/totwt_nstem_80_2559)
+. * bysort bpl year: egen double totwt_nstem2_80_2559      =total(perwt*nonstem
+> 2)
+. * bysort bpl year: egen double pct_nstem2_foreign_80_2559=total(perwt*nonstem
+> 2*foreignborn/totwt_nstem2_80_2559)
+. 
+. tab year, sum(n_16pl_stemo_for_yr_2559)
+
+            | Summary of n_16pl_stemo_for_yr_2559
+       year |        Mean   Std. Dev.       Freq.
+------------+------------------------------------
+       1980 |   9490.8661    12159.24   4,853,816
+       1990 |   21802.105   30785.436   5,786,671
+       2000 |   52600.696   69623.185   6,727,407
+       2010 |   70333.691   90663.913   1,422,353
+------------+------------------------------------
+      Total |   33322.295   55786.248  18,790,247
+
+. tab year, sum(n_ed16plus_for_yr_2559)
+
+            |  Summary of n_ed16plus_for_yr_2559
+       year |        Mean   Std. Dev.       Freq.
+------------+------------------------------------
+       1980 |     90563.2      116498   4,853,816
+       1990 |   189077.22   253735.79   5,786,671
+       2000 |   332578.09   425488.07   6,727,407
+       2010 |   471435.75   575539.29   1,422,353
+------------+------------------------------------
+      Total |   236380.13   356231.92  18,790,247
+
+. 
+. bysort bpl year: egen double natwt_yr_2559             =total(perwt*native)
+
+. bysort bpl year: egen double natpct_ed16plus_yr_2559   =total(perwt*ed16plus*
+> native         /natwt_yr_2559)
+
+. bysort bpl year: egen double natpct_all_16stemo_yr_2559=total(perwt*ed16plus*
+> native*stemocc /natwt_yr_2559)
+
+. gen                   double natpct_16pl_stemo_yr_2559 =natpct_all_16stemo_yr
+> _2559/natpct_ed16plus_yr_2559
+
+. bysort bpl year: egen double natpct_all_16nstem_yr_2559=total(perwt*ed16plus*
+> native*nonstem/natwt_yr_2559)
+
+. gen                   double natpct_16pl_nstem_yr_2559 =natpct_all_16nstem_yr
+> _2559/natpct_ed16plus_yr_2559
+
+. sum natpct*  
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+natpct_ed1~9 | 18,790,247     .244888     .058929   .1180504   .5373356
+natpct_all.. | 18,790,247    .0186497    .0073695   .0049588   .0427678
+natpct_16p.. | 18,790,247    .0741032    .0158861   .0269067   .1199149
+natpct_all.. | 18,790,247    .2262383    .0526257   .1117382   .5026299
+natpct_16p.. | 18,790,247    .9258968    .0158861   .8800851   .9730933
+
+. 
+. egen tag=tag(bpl year)
+
+. tab  tag
+
+    tag(bpl |
+      year) |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 | 18,790,043      100.00      100.00
+          1 |        204        0.00      100.00
+------------+-----------------------------------
+      Total | 18,790,247      100.00
+
+. keep if tag==1
+(18,790,043 observations deleted)
+
+. keep bpl year pct_* n_* totwt_yr natpct*
+
+. 
+. gen forshr_ed16plus_yr_2559       = pct_ed16plus_for_yr_2559   /pct_ed16plus_
+> all_yr_2559
+
+. gen forshr_16pl_stemo_yr_2559     = pct_16pl_stemo_for_yr_2559 /pct_16pl_stem
+> o_all_yr_2559
+
+. gen forshr_16pl_stem2_yr_2559     = pct_16pl_stem2_for_yr_2559 /pct_16pl_stem
+> 2_all_yr_2559
+
+. gen forshr_16pl_nstem_yr_2559     = pct_16pl_nstem_for_yr_2559 /pct_16pl_nste
+> m_all_yr_2559
+
+. gen forshr_16pl_nstem2_yr_2559    = pct_16pl_nstem2_for_yr_2559/pct_16pl_nste
+> m2_all_yr_2559
+
+. 
+. keep bpl year forshr* natpct* n_*
+
+. sort bpl year
+
+. saveold bpl_forshr_vars_yr.dta, v(11) replace
+(saving in Stata 12 format, which Stata 11 can read)
+file bpl_forshr_vars_yr.dta saved
+
+. 
+. 
+. 
+. 
+. 
+. 
+. use bpl_forshr_vars_yr.dta, clear
+
+. keep if year==1980
+(153 observations deleted)
+
+. rename n_16pl_stemo_for_yr_2559   n_16pl_stemo_for_80_2559
+
+. rename n_16pl_stem2_for_yr_2559   n_16pl_stem2_for_80_2559
+
+. rename n_16pl_nstem_for_yr_2559   n_16pl_nstem_for_80_2559
+
+. rename n_16pl_nstem2_for_yr_2559  n_16pl_nstem2_for_80_2559
+
+. rename n_ed16plus_for_yr_2559     n_ed16plus_for_80_2559
+
+. rename forshr_16pl_stemo_yr_2559  forshr_16pl_stemo_80_2559
+
+. rename forshr_16pl_stem2_yr_2559  forshr_16pl_stem2_80_2559
+
+. rename forshr_16pl_nstem_yr_2559  forshr_16pl_nstem_80_2559
+
+. rename forshr_16pl_nstem2_yr_2559 forshr_16pl_nstem2_80_2559
+
+. rename forshr_ed16plus_yr_2559    forshr_ed16plus_80_2559
+
+. 
+. qui sum forshr_16pl_stemo_80_2559
+
+. qui gen z_forshr_16pl_stemo_80_2559 = forshr_16pl_stemo_80_2559/`r(sd)'
+
+. qui gen z2forshr_16pl_stemo_80_2559 = forshr_16pl_stemo_80_2559/`=2*`r(sd)''
+
+. qui sum forshr_16pl_stem2_80_2559
+
+. qui gen z_forshr_16pl_stem2_80_2559 = forshr_16pl_stem2_80_2559/`r(sd)'
+
+. qui gen z2forshr_16pl_stem2_80_2559 = forshr_16pl_stem2_80_2559/`=2*`r(sd)''
+
+. qui sum forshr_16pl_nstem_80_2559
+
+. qui gen z_forshr_16pl_nstem_80_2559 = forshr_16pl_nstem_80_2559/`r(sd)'
+
+. qui gen z2forshr_16pl_nstem_80_2559 = forshr_16pl_nstem_80_2559/`=2*`r(sd)''
+
+. qui sum forshr_16pl_nstem2_80_2559
+
+. qui gen z_forshr_16pl_nstem2_80_2559 = forshr_16pl_nstem2_80_2559/`r(sd)'
+
+. qui gen z2forshr_16pl_nstem2_80_2559 = forshr_16pl_nstem2_80_2559/`=2*`r(sd)'
+> '
+
+. qui sum forshr_ed16plus_80_2559
+
+. qui gen z_forshr_ed16plus_80_2559 = forshr_ed16plus_80_2559/`r(sd)'
+
+. qui gen z2forshr_ed16plus_80_2559 = forshr_ed16plus_80_2559/`=2*`r(sd)''
+
+. 
+. drop year
+
+. sort bpl
+
+. saveold bpl_forshr_vars_80.dta, v(11) replace
+(saving in Stata 12 format, which Stata 11 can read)
+file bpl_forshr_vars_80.dta saved
+
+. 
+. use bpl_forshr_vars_yr.dta, clear
+
+. keep if year==1990
+(153 observations deleted)
+
+. rename n_16pl_stemo_for_yr_2559   n_16pl_stemo_for_90_2559
+
+. rename n_16pl_stem2_for_yr_2559   n_16pl_stem2_for_90_2559
+
+. rename n_16pl_nstem_for_yr_2559   n_16pl_nstem_for_90_2559
+
+. rename n_16pl_nstem2_for_yr_2559  n_16pl_nstem2_for_90_2559
+
+. rename n_ed16plus_for_yr_2559     n_ed16plus_for_90_2559
+
+. rename forshr_16pl_stemo_yr_2559  forshr_16pl_stemo_90_2559
+
+. rename forshr_16pl_stem2_yr_2559  forshr_16pl_stem2_90_2559
+
+. rename forshr_16pl_nstem_yr_2559  forshr_16pl_nstem_90_2559
+
+. rename forshr_16pl_nstem2_yr_2559 forshr_16pl_nstem2_90_2559
+
+. rename forshr_ed16plus_yr_2559    forshr_ed16plus_90_2559
+
+. rename natpct_ed16plus_yr_2559    natpct_ed16plus_90_2559
+
+. rename natpct_all_16stemo_yr_2559 natpct_all_16stemo_90_2559
+
+. rename natpct_16pl_stemo_yr_2559  natpct_16pl_stemo_90_2559
+
+. rename natpct_all_16nstem_yr_2559 natpct_all_16nstem_90_2559
+
+. rename natpct_16pl_nstem_yr_2559  natpct_16pl_nstem_90_2559
+
+. drop year
+
+. sort bpl
+
+. saveold bpl_forshr_vars_90.dta, v(11) replace
+(saving in Stata 12 format, which Stata 11 can read)
+file bpl_forshr_vars_90.dta saved
+
+. 
+. use bpl_forshr_vars_yr.dta, clear
+
+. keep if year==2000
+(153 observations deleted)
+
+. rename n_16pl_stemo_for_yr_2559   n_16pl_stemo_for_00_2559
+
+. rename n_16pl_stem2_for_yr_2559   n_16pl_stem2_for_00_2559
+
+. rename n_16pl_nstem_for_yr_2559   n_16pl_nstem_for_00_2559
+
+. rename n_16pl_nstem2_for_yr_2559  n_16pl_nstem2_for_00_2559
+
+. rename n_ed16plus_for_yr_2559     n_ed16plus_for_00_2559
+
+. rename forshr_16pl_stemo_yr_2559  forshr_16pl_stemo_00_2559
+
+. rename forshr_16pl_stem2_yr_2559  forshr_16pl_stem2_00_2559
+
+. rename forshr_16pl_nstem_yr_2559  forshr_16pl_nstem_00_2559
+
+. rename forshr_16pl_nstem2_yr_2559 forshr_16pl_nstem2_00_2559
+
+. rename forshr_ed16plus_yr_2559    forshr_ed16plus_00_2559
+
+. drop year
+
+. sort bpl
+
+. saveold bpl_forshr_vars_00.dta, v(11) replace
+(saving in Stata 12 format, which Stata 11 can read)
+file bpl_forshr_vars_00.dta saved
+
+. 
+. 
+. 
+. use             bpl_forshr_vars_80.dta, clear
+
+. sort  bpl
+
+. merge bpl using bpl_forshr_vars_90.dta
+(note: you are using old merge syntax; see [D] merge for new syntax)
+
+. tab  _merge
+
+     _merge |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          3 |         51      100.00      100.00
+------------+-----------------------------------
+      Total |         51      100.00
+
+. drop _merge
+
+. sort  bpl
+
+. merge bpl using bpl_forshr_vars_00.dta
+(note: you are using old merge syntax; see [D] merge for new syntax)
+
+. tab  _merge
+
+     _merge |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          3 |         51      100.00      100.00
+------------+-----------------------------------
+      Total |         51      100.00
+
+. drop _merge
+
+. gen forshr_16pl_stemo_00_90_2559 = forshr_16pl_stemo_00_2559 - forshr_16pl_st
+> emo_90_2559
+
+. gen forshr_16pl_nstem_00_90_2559 = forshr_16pl_nstem_00_2559 - forshr_16pl_ns
+> tem_90_2559
+
+. 
+. 
+. reg  forshr_16pl_stemo_00_2559   forshr_16pl_stemo_90_2559, robust
+
+Linear regression                               Number of obs     =         51
+                                                F(1, 49)          =     469.93
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.8741
+                                                Root MSE          =     .03167
+
+------------------------------------------------------------------------------
+             |               Robust
+fo~o_00_2559 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+fo~o_90_2559 |   1.381127   .0637117    21.68   0.000     1.253094    1.509161
+       _cons |   .0214176   .0090516     2.37   0.022     .0032278    .0396075
+------------------------------------------------------------------------------
+
+. *forshr_16pl_stemo_00_2559 |      Coef.   Std. Err.      t    P>|t|     [95% 
+> Conf. Interval]
+. *forshr_16pl_stemo_90_2559 |   1.381127   .0637117    21.68   0.000     1.253
+> 094    1.509161
+. corr forshr_16pl_stemo_00_2559   forshr_16pl_stemo_90_2559
+(obs=51)
+
+             | forshr.. forshr..
+-------------+------------------
+fo~o_00_2559 |   1.0000
+fo~o_90_2559 |   0.9350   1.0000
+
+
+. *0.9350
+. 
+. twoway (scatter forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559) (lfit
+>  forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559) 
+
+. reg forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559, robust
+
+Linear regression                               Number of obs     =         51
+                                                F(1, 49)          =      28.19
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3379
+                                                Root MSE          =     .03186
+
+------------------------------------------------------------------------------
+             |               Robust
+forshr_16p.. |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+fo~o_80_2559 |   .4670311   .0879695     5.31   0.000     .2902497    .6438125
+       _cons |   .0205344   .0095742     2.14   0.037     .0012943    .0397745
+------------------------------------------------------------------------------
+
+. *forshr_16pl_stemo_00_90~9 |      Coef.   Std. Err.      t    P>|t|     [95% 
+> Conf. Interval]
+. *forshr_16pl_stemo_80_2559 |   .4670311   .0879695     5.31   0.000     .2902
+> 497    .6438125
+. *R2=0.3379
+. 
+. keep bpl forshr_16pl_stemo_00_2559 forshr_16pl_stemo_00_90_2559 forshr_16pl_s
+> temo_80_2559 forshr_16pl_nstem_80_2559 forshr_ed16plus_80_2559 n_16pl_stemo_f
+> or_80_2559 n_16pl_stem2_for_80_2559 n_16pl_nstem_for_80_2559 n_16pl_nstem2_fo
+> r_80_2559 n_ed16plus_for_80_2559
+
+. saveold bpl_forshr_figure1.dta, v(11) replace
+(saving in Stata 12 format, which Stata 11 can read)
+file bpl_forshr_figure1.dta saved
+
+. 
+. 
+. 
+. twoway (scatter forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559) (lfit
+>  forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559) if  bpl~=13 & bpl~=5
+>  & bpl~=38 & bpl~=29
+
+. reg forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559 if  bpl~=13 & bpl~
+> =5 & bpl~=38 & bpl~=29, robust
+
+Linear regression                               Number of obs     =         47
+                                                F(1, 45)          =      42.76
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.4075
+                                                Root MSE          =     .03097
+
+------------------------------------------------------------------------------
+             |               Robust
+fors~90_2559 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+fo~o_80_2559 |   .5238719   .0801163     6.54   0.000     .3625095    .6852343
+       _cons |   .0129102   .0088181     1.46   0.150    -.0048505    .0306708
+------------------------------------------------------------------------------
+
+. *forshr_16pl_stemo_00~2559 |      Coef.   Std. Err.      t    P>|t|     [95% 
+> Conf. Interval]
+. *forshr_16pl_stemo_80_2559 |   .5238719   .0801163     6.54   0.000     .3625
+> 095    .6852343
+. *R2=0.4075
+. 
+. twoway (scatter forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559) (lfit
+>  forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559) 
+
+. reg forshr_16pl_stemo_00_90_2559 forshr_16pl_stemo_80_2559, robust
+
+Linear regression                               Number of obs     =         51
+                                                F(1, 49)          =      28.19
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.3379
+                                                Root MSE          =     .03186
+
+------------------------------------------------------------------------------
+             |               Robust
+fors~90_2559 |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+fo~o_80_2559 |   .4670311   .0879695     5.31   0.000     .2902497    .6438125
+       _cons |   .0205344   .0095742     2.14   0.037     .0012943    .0397745
+------------------------------------------------------------------------------
+
+. *forshr_16pl_stemo_00_90~9 |      Coef.   Std. Err.      t    P>|t|     [95% 
+> Conf. Interval]
+. *forshr_16pl_stemo_80_2559 |   .4670311   .0879695     5.31   0.000     .2902
+> 497    .6438125
+. *R2=0.3379
+. 
+. log close
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Data/cr_foreign_share
+> s.log
+  log type:  text
+ closed on:  19 Oct 2018, 15:21:33
+-------------------------------------------------------------------------------

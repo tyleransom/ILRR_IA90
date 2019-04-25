@@ -1,0 +1,697 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Analysis/figs2_4.log
+  log type:  text
+ opened on:  21 Aug 2018, 08:41:23
+
+. 
+. global data_path "../Data/"
+
+. global graph_path "../Figures/"
+
+. 
+. !gunzip -fc ${data_path}acs_09_16.dat.gz > ${data_path}tmp.dat
+
+
+. 
+. quietly infix                  ///
+>   int     year        1-4      ///
+>   byte    datanum     5-6      ///
+>   double  serial      7-14     ///
+>   float   hhwt        15-24    ///
+>   byte    statefip    25-26    ///
+>   byte    gq          27-27    ///
+>   byte    ownershp    28-28    ///
+>   byte    ownershpd   29-30    ///
+>   int     pernum      31-34    ///
+>   float   perwt       35-44    ///
+>   byte    nchild      45-45    ///
+>   byte    nchlt5      46-46    ///
+>   byte    yngch       47-48    ///
+>   byte    sex         49-49    ///
+>   int     age         50-52    ///
+>   byte    marst       53-53    ///
+>   byte    race        54-54    ///
+>   int     raced       55-57    ///
+>   byte    hispan      58-58    ///
+>   int     hispand     59-61    ///
+>   int     bpl         62-64    ///
+>   long    bpld        65-69    ///
+>   byte    citizen     70-70    ///
+>   int     yrnatur     71-74    ///
+>   byte    yrsusa1     75-76    ///
+>   byte    language    77-78    ///
+>   int     languaged   79-82    ///
+>   byte    speakeng    83-83    ///
+>   byte    school      84-84    ///
+>   byte    educ        85-86    ///
+>   int     educd       87-89    ///
+>   byte    degfield    90-91    ///
+>   int     degfieldd   92-95    ///
+>   byte    degfield2   96-97    ///
+>   int     degfield2d  98-101   ///
+>   byte    empstat     102-102  ///
+>   byte    empstatd    103-104  ///
+>   int     occ1990     105-107  ///
+>   int     ind1990     108-110  ///
+>   byte    classwkr    111-111  ///
+>   byte    classwkrd   112-113  ///
+>   byte    wkswork2    114-114  ///
+>   byte    uhrswork    115-116  ///
+>   byte    workedyr    117-117  ///
+>   long    ftotinc     118-124  ///
+>   long    incwage     125-130  ///
+>   long    incearn     131-137  ///
+>   using ${data_path}tmp.dat ///
+>   if age>=25 & age<=55 & bpl<=56 & year>=2009 & year<=2016
+
+. *extract includes years 2009-14 and ages 18+; no other restrictions 
+. 
+. !rm -f ${data_path}tmp.dat
+
+
+. 
+. replace perwt    = perwt    / 100
+(8,063,569 real changes made)
+
+. gen     yearofbirth=year-age
+
+. gen     yearage18=yearofbirth+18
+
+. keep if yearage18>=1984 & yearage18<=1996
+(4,955,319 observations deleted)
+
+. *Define individual controls
+. gen     ed16plus=0
+
+. replace ed16plus=1 if educd>=100
+(1,068,043 real changes made)
+
+. gen     female=sex-1
+
+. gen     male=1-female
+
+. gen     white=0
+
+. gen     black=0
+
+. replace white=1 if race==1 & hispan==0
+(2,395,093 real changes made)
+
+. replace black=1 if race==2 & hispan==0
+(356,369 real changes made)
+
+. recode  hispan 0=0 else=1
+(hispan: 79263 changes made)
+
+. gen     raceg=0
+
+. replace raceg=1 if white==1
+(2,395,093 real changes made)
+
+. replace raceg=2 if black==1
+(356,369 real changes made)
+
+. replace raceg=3 if hispan==1
+(236,604 real changes made)
+
+. 
+. sort  yearage18 bpl
+
+. merge yearage18 bpl using ${data_path}statecontrols.dta
+(note: you are using old merge syntax; see [D] merge for new syntax)
+variables yearage18 bpl do not uniquely identify observations in the master
+    data
+
+. tab  _merge
+
+     _merge |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          2 |      1,276        0.04        0.04
+          3 |  3,108,250       99.96      100.00
+------------+-----------------------------------
+      Total |  3,109,526      100.00
+
+. drop if _merge==2
+(1,276 observations deleted)
+
+. drop _merge
+
+. sort bpl
+
+. merge bpl using ${data_path}bpl_vars_80.dta
+(note: you are using old merge syntax; see [D] merge for new syntax)
+variable bpl does not uniquely identify observations in the master data
+(note: variable bpl was int, now float to accommodate using data's values)
+
+. tab  _merge
+
+     _merge |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          3 |  3,108,250      100.00      100.00
+------------+-----------------------------------
+      Total |  3,108,250      100.00
+
+. drop _merge
+
+. gen     post91=0
+
+. replace post91=1 if yearage18>=1991
+(1,326,692 real changes made)
+
+. sum *shr* [aweight=perwt]
+
+    Variable |     Obs      Weight        Mean   Std. Dev.       Min        Max
+-------------+-----------------------------------------------------------------
+afrshr_~2559 | 3108250   325248516    .0028113   .0014087   .0002954   .0111516
+asishr_~2559 | 3108250   325248516    .0304115   .0214629   .0042711   .1068077
+canshr_~2559 | 3108250   325248516    .0043033   .0026751   .0004047   .0137276
+chishr_~2559 | 3108250   325248516    .0057167   .0042807   .0004318   .0175684
+cjkshr_~2559 | 3108250   325248516    .0108536   .0082307   .0017271   .0451188
+-------------+-----------------------------------------------------------------
+cukshr_~2559 | 3108250   325248516    .0087136   .0043446   .0026144   .0211193
+forshr_ed1~9 | 3108250   325248516    .0778023   .0444042    .020915   .1568837
+indshr_~2559 | 3108250   325248516    .0064674   .0035464    .000504   .0161344
+latshr_~2559 | 3108250   325248516    .0119627   .0127948   .0014771    .067377
+oasshr_~2559 | 3108250   325248516    .0182274   .0155302   .0020679   .0862448
+-------------+-----------------------------------------------------------------
+roashr_~2559 | 3108250   325248516    .0130905   .0115971   .0011817   .0586944
+roeshr_~2559 | 3108250   325248516    .0182607   .0109188   .0039216    .044769
+uksshr_~2559 | 3108250   325248516    .0044104   .0021415   .0008715   .0086546
+forshr_16p.. | 3108250   325248516     .120169   .0582745   .0136986   .2155992
+forshr_16p.. | 3108250   325248516    .1332135   .0620479    .021645   .2450905
+-------------+-----------------------------------------------------------------
+forshr_ed_.. | 3108250   325248516    .0082324   .0046243   .0004284   .0175661
+forshr_ed_.. | 3108250   325248516    .0141451   .0068846   .0025202   .0273954
+forshr_all.. | 3108250   325248516    .0016455   .0010968   .0000779   .0038946
+forshr_all.. | 3108250   325248516    .0027842   .0016194   .0004913   .0060739
+forshr_16p.. | 3108250   325248516    .0746735   .0434897   .0193258   .1517536
+-------------+-----------------------------------------------------------------
+forshr_16p.. | 3108250   325248516    .0712223   .0429603   .0169811   .1506558
+forshr_ed_.. | 3108250   325248516    .0695699   .0404545   .0187364   .1427431
+forshr_ed_.. | 3108250   325248516    .0636571    .038358   .0156863   .1369535
+forshr_all.. | 3108250   325248516    .0139225   .0095142   .0025419   .0329159
+forshr_all.. | 3108250   325248516    .0127837   .0090113    .002257   .0315809
+-------------+-----------------------------------------------------------------
+z_afrsh~2559 | 3108250   325248516    1.683419   .8435204   .1769003   6.677673
+z2afrsh~2559 | 3108250   325248516    .8417097   .4217602   .0884501   3.338837
+z_asish~2559 | 3108250   325248516    1.643902   1.160182   .2308741   5.773526
+z2asish~2559 | 3108250   325248516     .821951   .5800911    .115437   2.886763
+z_cansh~2559 | 3108250   325248516    1.386667   .8620116    .130407   4.423509
+-------------+-----------------------------------------------------------------
+z2cansh~2559 | 3108250   325248516    .6933336   .4310058   .0652035   2.211754
+z_chish~2559 | 3108250   325248516    1.711836   1.281838   .1292935   5.260741
+z2chish~2559 | 3108250   325248516     .855918   .6409189   .0646468   2.630371
+z_cjksh~2559 | 3108250   325248516    1.481878   1.123755   .2358079   6.160194
+z2cjksh~2559 | 3108250   325248516    .7409389   .5618773    .117904   3.080097
+-------------+-----------------------------------------------------------------
+z_cuksh~2559 | 3108250   325248516    1.887254   .9409847   .5662394   4.574162
+z2cuksh~2559 | 3108250   325248516    .9436272   .4704923   .2831197   2.287081
+z_forshr_e.. | 3108250   325248516    2.214351     1.2638   .5952684    4.46511
+z2forshr_e.. | 3108250   325248516    1.107176   .6319001   .2976342   2.232555
+z_indsh~2559 | 3108250   325248516    2.025989    1.11096   .1578945   5.054294
+-------------+-----------------------------------------------------------------
+z2indsh~2559 | 3108250   325248516    1.012995   .5554802   .0789473   2.527147
+z_latsh~2559 | 3108250   325248516    1.161637   1.242444   .1434343    6.54265
+z2latsh~2559 | 3108250   325248516    .5808187   .6212222   .0717172   3.271325
+z_oassh~2559 | 3108250   325248516    1.305678   1.112468   .1481328   6.177953
+z2oassh~2559 | 3108250   325248516     .652839   .5562341   .0740664   3.088976
+-------------+-----------------------------------------------------------------
+z_roash~2559 | 3108250   325248516    1.322692   1.171804   .1194002   5.930622
+z2roash~2559 | 3108250   325248516     .661346   .5859019   .0597001   2.965311
+z_roesh~2559 | 3108250   325248516    2.130748   1.274057    .457589   5.223885
+z2roesh~2559 | 3108250   325248516    1.065374   .6370285   .2287945   2.611942
+z_ukssh~2559 | 3108250   325248516      2.0148   .9783091   .3981125   3.953717
+-------------+-----------------------------------------------------------------
+z2ukssh~2559 | 3108250   325248516      1.0074   .4891546   .1990563   1.976859
+z_forshr_1.. | 3108250   325248516    2.490722   1.207845    .283929   4.468687
+z2forshr_1.. | 3108250   325248516    1.245361   .6039226   .1419645   2.234343
+z_forshr_1.. | 3108250   325248516     2.57706   1.200337   .4187303    4.74136
+z2forshr_1.. | 3108250   325248516     1.28853   .6001685   .2093652    2.37068
+-------------+-----------------------------------------------------------------
+z_forshr_e.. | 3108250   325248516    2.095084   1.176857   .1090372    4.47044
+z2forshr_e.. | 3108250   325248516    1.047542   .5884285   .0545186    2.23522
+z_forshr_e.. | 3108250   325248516    2.352903   1.145183   .4192035   4.556946
+z2forshr_e.. | 3108250   325248516    1.176451   .5725916   .2096018   2.278473
+z_forshr_a.. | 3108250   325248516    1.798571   1.198836   .0851882   4.257005
+-------------+-----------------------------------------------------------------
+z2forshr_a.. | 3108250   325248516    .8992857   .5994178   .0425941   2.128503
+z_forshr_a.. | 3108250   325248516    2.019545   1.174677   .3563705   4.405735
+z2forshr_a.. | 3108250   325248516    1.009772   .5873385   .1781853   2.202868
+z_forshr_1.. | 3108250   325248516    2.167442   1.262314   .5609438   4.404735
+z2forshr_1.. | 3108250   325248516    1.083721    .631157   .2804719   2.202367
+-------------+-----------------------------------------------------------------
+z_forshr_1.. | 3108250   325248516    2.101377    1.26752   .5010193    4.44502
+z2forshr_1.. | 3108250   325248516    1.050688   .6337601   .2505096    2.22251
+z_forshr_e.. | 3108250   325248516    2.160569    1.25636    .581879   4.433043
+z2forshr_e.. | 3108250   325248516    1.080284   .6281801   .2909395   2.216522
+z_forshr_e.. | 3108250   325248516    2.083146   1.255244   .5133252   4.481731
+-------------+-----------------------------------------------------------------
+z2forshr_e.. | 3108250   325248516    1.041573   .6276221   .2566626   2.240866
+z_forshr_a.. | 3108250   325248516    1.762701   1.204578   .3218273   4.167438
+z2forshr_a.. | 3108250   325248516    .8813505   .6022891   .1609136   2.083719
+z_forshr_a.. | 3108250   325248516    1.701482   1.199379   .3004069   4.203345
+z2forshr_a.. | 3108250   325248516    .8507412   .5996894   .1502035   2.101672
+
+. gen     z2forshr_16pl_stemo_80_2559_p91 = z2forshr_16pl_stemo_80_2559*post91
+
+. gen     z2forshr_16pl_stem2_80_2559_p91 = z2forshr_16pl_stem2_80_2559*post91
+
+. gen     z2forshr_ed16plus_80_2559_p91   = z2forshr_ed16plus_80_2559*post91
+
+. 
+. gen y86=0
+
+. gen y87=0
+
+. gen y88=0
+
+. gen y89=0
+
+. gen y90=0
+
+. gen y91=0
+
+. gen y92=0
+
+. gen y93=0
+
+. gen y94=0
+
+. replace y86=1 if yearage18==1986
+(248,256 real changes made)
+
+. replace y87=1 if yearage18==1987
+(252,510 real changes made)
+
+. replace y88=1 if yearage18==1988
+(260,632 real changes made)
+
+. replace y89=1 if yearage18==1989
+(260,414 real changes made)
+
+. replace y90=1 if yearage18==1990
+(237,214 real changes made)
+
+. replace y91=1 if yearage18==1991
+(223,099 real changes made)
+
+. replace y92=1 if yearage18==1992
+(217,269 real changes made)
+
+. replace y93=1 if yearage18==1993
+(219,759 real changes made)
+
+. replace y94=1 if yearage18==1994
+(217,682 real changes made)
+
+. gen     z2forshr_16pl_stemo_80_2559_1986=z2forshr_16pl_stemo_80_2559*y86
+
+. gen     z2forshr_16pl_stemo_80_2559_1987=z2forshr_16pl_stemo_80_2559*y87
+
+. gen     z2forshr_16pl_stemo_80_2559_1988=z2forshr_16pl_stemo_80_2559*y88
+
+. gen     z2forshr_16pl_stemo_80_2559_1989=z2forshr_16pl_stemo_80_2559*y89
+
+. gen     z2forshr_16pl_stemo_80_2559_1991=z2forshr_16pl_stemo_80_2559*y91
+
+. gen     z2forshr_16pl_stemo_80_2559_1992=z2forshr_16pl_stemo_80_2559*y92
+
+. gen     z2forshr_16pl_stemo_80_2559_1993=z2forshr_16pl_stemo_80_2559*y93
+
+. gen     z2forshr_16pl_stemo_80_2559_1994=z2forshr_16pl_stemo_80_2559*y94
+
+. 
+. gen     stem1maj=degfieldd
+
+. recode  stem1maj  1100=0    1101=0  1102=0  1103=1  1104=1  1105=1  1106=1  1
+> 199=0  1300=1  1301=1  1302=1  1303=0  1401=0  1501=0  1900=0  1901=0  1902=0
+>   1903=0  1904=0  2001=1  2100=1  2101=1  2102=1  2105=1  2106=1  2107=1  220
+> 1=0  2300=0  2301=0  2303=0  2304=0  2305=0  2306=0  2307=0  2308=0  2309=0  
+> 2310=0  2311=0  2312=0  2313=0  2314=0  2399=0  2400=1  2401=1  2402=1  2403=
+> 1  2404=1  2405=1  2406=1  2407=1  2408=1  2409=1  2410=1  2411=1  2412=1  24
+> 13=1  2414=1  2415=1  2416=1  2417=1  2418=1  2419=1  2499=1  2500=1  2501=1 
+>  2502=1  2503=1  2504=1  2599=1  2600=0  2601=0  2602=0  2603=0  2901=0  3200
+> =0  3201=0  3202=0  3300=0  3301=0  3302=0  3400=0  3401=0  3402=0  3501=0  3
+> 600=1  3601=1  3602=1  3603=1  3604=1  3605=1  3606=1  3607=1  3608=1  3609=1
+>   3611=1  3699=1  3700=1  3701=1  3702=1  3801=1  4000=0  4001=0  4002=1  400
+> 3=1  4005=1  4006=1  4007=0  4008=0  4101=0  4801=0  4901=0  5000=1  5001=1  
+> 5002=1  5003=1  5004=1  5005=1  5006=1  5007=1  5008=1  5098=1  5102=1  5200=
+> 0  5201=0  5202=0  5203=0  5205=0  5206=0  5299=0  5301=0  5400=0  5401=0  54
+> 02=0  5403=0  5404=0  5500=0  5501=0  5502=0  5503=0  5504=0  5505=0  5506=0 
+>  5507=0  5599=0  5601=0  5701=0  5801=0  5901=1  6000=0  6001=0  6002=0  6003
+> =0  6004=0  6005=0  6006=0  6007=0  6099=0  6100=0  6102=0  6103=0  6104=0  6
+> 105=0  6106=1  6107=0  6108=1  6109=0  6110=0  6199=0  6200=0  6201=0  6202=1
+>   6203=0  6204=0  6205=0  6206=0  6207=0  6209=0  6210=0  6211=0  6212=1  629
+> 9=0  6402=0  6403=0
+(stem1maj: 1068043 changes made)
+
+. gen     stem2maj=degfield2d
+
+. recode  stem2maj  1100=0    1101=0  1102=0  1103=1  1104=1  1105=1  1106=1  1
+> 199=0  1300=1  1301=1  1302=1  1303=0  1401=0  1501=0  1900=0  1901=0  1902=0
+>   1903=0  1904=0  2001=1  2100=1  2101=1  2102=1  2105=1  2106=1  2107=1  220
+> 1=0  2300=0  2301=0  2303=0  2304=0  2305=0  2306=0  2307=0  2308=0  2309=0  
+> 2310=0  2311=0  2312=0  2313=0  2314=0  2399=0  2400=1  2401=1  2402=1  2403=
+> 1  2404=1  2405=1  2406=1  2407=1  2408=1  2409=1  2410=1  2411=1  2412=1  24
+> 13=1  2414=1  2415=1  2416=1  2417=1  2418=1  2419=1  2499=1  2500=1  2501=1 
+>  2502=1  2503=1  2504=1  2599=1  2600=0  2601=0  2602=0  2603=0  2901=0  3200
+> =0  3201=0  3202=0  3300=0  3301=0  3302=0  3400=0  3401=0  3402=0  3501=0  3
+> 600=1  3601=1  3602=1  3603=1  3604=1  3605=1  3606=1  3607=1  3608=1  3609=1
+>   3611=1  3699=1  3700=1  3701=1  3702=1  3801=1  4000=0  4001=0  4002=1  400
+> 3=1  4005=1  4006=1  4007=0  4008=0  4101=0  4801=0  4901=0  5000=1  5001=1  
+> 5002=1  5003=1  5004=1  5005=1  5006=1  5007=1  5008=1  5098=1  5102=1  5200=
+> 0  5201=0  5202=0  5203=0  5205=0  5206=0  5299=0  5301=0  5400=0  5401=0  54
+> 02=0  5403=0  5404=0  5500=0  5501=0  5502=0  5503=0  5504=0  5505=0  5506=0 
+>  5507=0  5599=0  5601=0  5701=0  5801=0  5901=1  6000=0  6001=0  6002=0  6003
+> =0  6004=0  6005=0  6006=0  6007=0  6099=0  6100=0  6102=0  6103=0  6104=0  6
+> 105=0  6106=1  6107=0  6108=1  6109=0  6110=0  6199=0  6200=0  6201=0  6202=1
+>   6203=0  6204=0  6205=0  6206=0  6207=0  6209=0  6210=0  6211=0  6212=1  629
+> 9=0  6402=0  6403=0
+(stem2maj: 117438 changes made)
+
+. egen    stem_maj=rowmax(stem1maj stem2maj)
+
+. replace stem_maj=0 if educd<100
+(0 real changes made)
+
+. 
+. gen     business=0
+
+. gen     education=0
+
+. gen     health=0
+
+. gen     libarts=0
+
+. gen     socscience=0
+
+. gen     othermajor=0
+
+. replace business=1   if stem_maj==0 & (degfield==62)
+(223,749 real changes made)
+
+. replace education=1  if stem_maj==0 & (degfield==23)
+(124,036 real changes made)
+
+. replace health=1     if stem_maj==0 & (degfield==61)
+(64,331 real changes made)
+
+. replace libarts=1    if stem_maj==0 & (degfield==15 | degfield==19 | degfield
+> ==26 | degfield==33 | degfield==34 | degfield==35 | degfield==40 | degfield==
+> 48 | degfield==49 | degfield==60 | degfield==64)
+(207,727 real changes made)
+
+. replace socscience=1 if stem_maj==0 & (degfield==32 | degfield==52 | degfield
+> ==53 | degfield==54 | degfield==55)
+(185,132 real changes made)
+
+. replace othermajor=1 if stem_maj==0 & (degfield==11 | degfield==13 | degfield
+> ==56 | degfield==57 | degfield==58   |   degfield==14 | degfield==22 | degfie
+> ld==41   |  degfield==29)
+(38,496 real changes made)
+
+. 
+. gen     computersci=0
+
+. gen     engineering=0
+
+. gen     technology =0
+
+. gen     biosciences=0
+
+. gen     physciences=0
+
+. gen     maths=0
+
+. replace computersci=1 if degfield==21
+(30,314 real changes made)
+
+. replace engineering=1 if degfield==24
+(60,997 real changes made)
+
+. replace technology =1 if degfield==25
+(7,323 real changes made)
+
+. replace biosciences=1 if degfield==36
+(49,578 real changes made)
+
+. replace physciences=1 if degfield==50
+(24,989 real changes made)
+
+. replace maths=1       if degfield==37
+(12,170 real changes made)
+
+. gen     allotherstem= stem_maj - computersci - engineering - technology - bio
+> sciences - physciences - maths
+
+. 
+. tab year       , gen(yeardum)
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2009 |    386,684       12.44       12.44
+       2010 |    390,865       12.58       25.02
+       2011 |    385,330       12.40       37.41
+       2012 |    386,882       12.45       49.86
+       2013 |    391,898       12.61       62.47
+       2014 |    388,022       12.48       74.95
+       2015 |    388,500       12.50       87.45
+       2016 |    390,069       12.55      100.00
+------------+-----------------------------------
+      Total |  3,108,250      100.00
+
+. tab age        , gen(agedum)
+
+        age |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         31 |     27,919        0.90        0.90
+         32 |     56,184        1.81        2.71
+         33 |     82,687        2.66        5.37
+         34 |    110,130        3.54        8.91
+         35 |    139,853        4.50       13.41
+         36 |    164,721        5.30       18.71
+         37 |    193,347        6.22       24.93
+         38 |    227,916        7.33       32.26
+         39 |    230,859        7.43       39.69
+         40 |    245,314        7.89       47.58
+         41 |    236,807        7.62       55.20
+         42 |    244,232        7.86       63.06
+         43 |    249,066        8.01       71.07
+         44 |    219,780        7.07       78.14
+         45 |    196,469        6.32       84.46
+         46 |    160,017        5.15       89.61
+         47 |    126,946        4.08       93.69
+         48 |     96,032        3.09       96.78
+         49 |     65,222        2.10       98.88
+         50 |     34,749        1.12      100.00
+------------+-----------------------------------
+      Total |  3,108,250      100.00
+
+. tab yearofbirth, gen(yearbirthdum)
+
+yearofbirth |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1966 |    266,661        8.58        8.58
+       1967 |    255,871        8.23       16.81
+       1968 |    248,256        7.99       24.80
+       1969 |    252,510        8.12       32.92
+       1970 |    260,632        8.39       41.31
+       1971 |    260,414        8.38       49.69
+       1972 |    237,214        7.63       57.32
+       1973 |    223,099        7.18       64.49
+       1974 |    217,269        6.99       71.48
+       1975 |    219,759        7.07       78.55
+       1976 |    217,682        7.00       85.56
+       1977 |    222,970        7.17       92.73
+       1978 |    225,913        7.27      100.00
+------------+-----------------------------------
+      Total |  3,108,250      100.00
+
+. drop yeardum1 agedum1 yearbirthdum1 
+
+. 
+. gen     stemocc=occ1990
+
+. recode  stemocc  44/64=1 66/83=1 229=1                  else=0
+(stemocc: 3108250 changes made)
+
+. gen     employed=0
+
+. replace employed=1 if empstat==1
+(2,380,816 real changes made)
+
+. gen     emp_stemocc=employed*stemocc
+
+. gen     workedly=0
+
+. replace workedly=1 if workedyr==3
+(2,564,500 real changes made)
+
+. gen     lincearn=ln(incearn)
+(547,105 missing values generated)
+
+. 
+. egen tagbpl=tag(bpl)
+
+. gen     forshr_gc=0
+
+. replace forshr_gc=1 if forshr_16pl_stemo_80_2559>=0.120
+(1,464,535 real changes made)
+
+. tab forshr_gc  if tagbpl & !inlist(bpl,13,5,38,29), sum(forshr_16pl_stemo_80_
+> 2559)
+
+            |             Summary of
+            |      forshr_16pl_stemo_80_2559
+  forshr_gc |        Mean   Std. Dev.       Freq.
+------------+------------------------------------
+          0 |   .06494768   .02250639          32
+          1 |   .15008146   .03629822          15
+------------+------------------------------------
+      Total |   .09211804   .04849209          47
+
+. 
+. drop if !inlist(raceg,1,2)
+(356,788 observations deleted)
+
+. drop if inlist(bpl,13,5,38,29)
+(184,365 observations deleted)
+
+. 
+. *----------------------------------------------------------------------------
+. * Graph outcomes (bin scatter) by cohort for highly affected and less highly 
+> affected areas
+. *----------------------------------------------------------------------------
+. foreach outcome in stem_maj {
+  2.     if "`outcome'"=="stem_maj" {
+  3.         local outc = "STEM"
+  4.         local outclbl = "STEM majors"
+  5.     }
+  6.     forv b = 0/1 {
+  7.         forv m = 0/1 {
+  8.             if "`m'"=="1" {
+  9.                 local em = "m"
+ 10.             }
+ 11.             else {
+ 12.                 local em = "f"
+ 13.             }
+ 14.             if "`b'"=="1" {
+ 15.                 local bee = "b"
+ 16.                 local raceCond = "black==1"
+ 17.             }
+ 18.             else {
+ 19.                 local bee = "w"
+ 20.                 local raceCond = "white==1"
+ 21.             }
+ 22.             
+.             binscatter `outcome' yearage18 if female==`=1-`m'' & black==`b' &
+>  inrange(yearage18,1986,1994) & ed16plus==1 [aweight=perwt], line(connect) xl
+> ine(1990.5) by(forshr_gc) mcolors("khaki" "navy") lcolors("khaki" "navy") leg
+> end(label(1 "Low-exposure areas") label(2 "High-exposure areas") cols(2) symx
+> size(10) keygap(1)) ytitle("Percent `outclbl'", height(8)) xtitle("Year age 1
+> 8", height(5)) xlabel(1986(1)1994) graphregion(color(white)) // ylabel(-.05(.
+> 05).15) 
+ 23.             graph export ${graph_path}fig2_`bee'`em'_`outc'_BA.eps, replac
+> e
+ 24.         }
+ 25.     }
+ 26. }
+(file ../Figures/fig2_wf_STEM_BA.eps written in EPS format)
+(file ../Figures/fig2_wm_STEM_BA.eps written in EPS format)
+(file ../Figures/fig2_bf_STEM_BA.eps written in EPS format)
+(file ../Figures/fig2_bm_STEM_BA.eps written in EPS format)
+
+. 
+. foreach outcome in emp_stemocc {
+  2.     if "`outcome'"=="stemocc" {
+  3.         local outc = "STEMocc"
+  4.         local outclbl = "working in STEM occupation"
+  5.     }
+  6.     forv b = 0/1 {
+  7.         forv m = 0/1 {
+  8.             if "`m'"=="1" {
+  9.                 local em = "m"
+ 10.             }
+ 11.             else {
+ 12.                 local em = "f"
+ 13.             }
+ 14.             if "`b'"=="1" {
+ 15.                 local bee = "b"
+ 16.                 local raceCond = "black==1"
+ 17.             }
+ 18.             else {
+ 19.                 local bee = "w"
+ 20.                 local raceCond = "white==1"
+ 21.             }
+ 22.             
+.             binscatter `outcome' yearage18 if female==`=1-`m'' & black==`b' &
+>  inrange(yearage18,1986,1994) & ed16plus==1 & stem_maj==1 [aweight=perwt], li
+> ne(connect) xline(1990.5) by(forshr_gc) mcolors("khaki" "navy") lcolors("khak
+> i" "navy") legend(label(1 "Low-exposure areas") label(2 "High-exposure areas"
+> ) cols(2) symxsize(10) keygap(1)) ytitle("Percent `outclbl'", height(8)) xtit
+> le("Year age 18", height(5)) xlabel(1986(1)1994) graphregion(color(white)) //
+>  ylabel(-.05(.05).15) 
+ 23.             graph export ${graph_path}fig3_`bee'`em'_`outc'_stemBA.eps, re
+> place
+ 24.         }
+ 25.     }
+ 26. }
+(note: file ../Figures/fig3_wf_STEM_stemBA.eps not found)
+(file ../Figures/fig3_wf_STEM_stemBA.eps written in EPS format)
+(note: file ../Figures/fig3_wm_STEM_stemBA.eps not found)
+(file ../Figures/fig3_wm_STEM_stemBA.eps written in EPS format)
+(note: file ../Figures/fig3_bf_STEM_stemBA.eps not found)
+(file ../Figures/fig3_bf_STEM_stemBA.eps written in EPS format)
+(note: file ../Figures/fig3_bm_STEM_stemBA.eps not found)
+(file ../Figures/fig3_bm_STEM_stemBA.eps written in EPS format)
+
+. 
+. foreach outcome in workedly {
+  2.     if "`outcome'"=="workedly" {
+  3.         local outc = "LFPly"
+  4.         local outclbl = "employed in previous year"
+  5.     }
+  6.     forv b = 0/1 {
+  7.         forv m = 0/1 {
+  8.             if "`m'"=="1" {
+  9.                 local em = "m"
+ 10.             }
+ 11.             else {
+ 12.                 local em = "f"
+ 13.             }
+ 14.             if "`b'"=="1" {
+ 15.                 local bee = "b"
+ 16.                 local raceCond = "black==1"
+ 17.             }
+ 18.             else {
+ 19.                 local bee = "w"
+ 20.                 local raceCond = "white==1"
+ 21.             }
+ 22.             
+.             binscatter `outcome' yearage18 if female==`=1-`m'' & black==`b' &
+>  inrange(yearage18,1986,1994) & ed16plus==1 & stem_maj==1 [aweight=perwt], li
+> ne(connect) xline(1990.5) by(forshr_gc) mcolors("khaki" "navy") lcolors("khak
+> i" "navy") legend(label(1 "Low-exposure areas") label(2 "High-exposure areas"
+> ) cols(2) symxsize(10) keygap(1)) ytitle("Percent `outclbl'", height(8)) xtit
+> le("Year age 18", height(5)) xlabel(1986(1)1994) graphregion(color(white)) //
+>  ylabel(-.05(.05).15) 
+ 23.             graph export ${graph_path}fig4_`bee'`em'_`outc'_stemBA.eps, re
+> place
+ 24.         }
+ 25.     }
+ 26. }
+(file ../Figures/fig4_wf_LFPly_stemBA.eps written in EPS format)
+(file ../Figures/fig4_wm_LFPly_stemBA.eps written in EPS format)
+(file ../Figures/fig4_bf_LFPly_stemBA.eps written in EPS format)
+(file ../Figures/fig4_bm_LFPly_stemBA.eps written in EPS format)
+
+. 
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Analysis/figs2_4.log
+  log type:  text
+ closed on:  21 Aug 2018, 08:50:00
+-------------------------------------------------------------------------------

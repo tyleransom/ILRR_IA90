@@ -1,0 +1,511 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Data/cr_statecontrols
+> .log
+  log type:  text
+ opened on:   1 Feb 2018, 13:05:58
+
+. 
+. !gunzip -f statecontrols.dat.gz
+
+
+. 
+. * CPS ASEC
+. set more off
+
+. clear
+
+. quietly infix                ///
+>   int     year        1-4      ///
+>   long    serial      5-9      ///
+>   float   hwtsupp     10-19    ///
+>   byte    statefip    20-21    ///
+>   byte    asecflag    22-22    ///
+>   double  hhincome    23-30    ///
+>   byte    month       31-32    ///
+>   byte    pernum      33-34    ///
+>   float   wtsupp      35-44    ///
+>   float   earnwt      45-54    ///
+>   byte    age         55-56    ///
+>   byte    sex         57-57    ///
+>   int     race        58-60    ///
+>   int     hispan      61-63    ///
+>   int     educ        64-66    ///
+>   int     higrade     67-69    ///
+>   byte    educ99      70-71    ///
+>   byte    empstat     72-73    ///
+>   int     occ1990     74-76    ///
+>   byte    wkswork1    77-78    ///
+>   int     uhrswork1   79-81    ///
+>   double  ftotval     82-91    ///
+>   long    incwage     92-98    ///
+>   byte    migsta1     99-100   ///
+>   byte    migsta5     101-102  ///
+>   byte    migrate1    103-103  ///
+>   byte    migrate5    104-105  ///
+>   byte    qhigrade    106-106  ///
+>   byte    quhrswork1  107-108  ///
+>   byte    qwkswork    109-109  ///
+>   byte    qincwage    110-110  ///
+>  using statecontrols.dat  
+
+. *This was extracted from IPUMS-CPS and includes the March CPS for years 1978-
+> 2011, but only a subset of these years (1986-1994 for the main specification)
+>  are used in our analysis.
+. *The initial extract includes the full sample.
+. 
+. !gzip -f statecontrols.dat
+
+
+. 
+. replace hwtsupp  = hwtsupp  / 10000
+(5,842,870 real changes made)
+
+. replace wtsupp   = wtsupp   / 100
+(5,842,869 real changes made)
+
+. replace earnwt   = earnwt   / 10000
+(638,901 real changes made)
+
+. rename  wtsupp perwt
+
+. 
+. drop if perwt==0
+(166 observations deleted)
+
+. egen tag=tag(year serial)
+
+. tab  tag
+
+   tag(year |
+    serial) |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |  3,685,897       63.08       63.08
+          1 |  2,156,972       36.92      100.00
+------------+-----------------------------------
+      Total |  5,842,869      100.00
+
+. bysort state year: egen medhhincome_ipums_styr_wk=median(hhincome) if tag==1
+(3685897 missing values generated)
+
+. bysort state year: egen medhhincome_ipums_styr=max(medhhincome_ipums_styr_wk)
+>  
+
+. drop tag *_wk
+
+. sum medhhincome
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+medhhincom~r |  5,842,869    35064.56    13776.66       8727      71794
+
+. 
+. drop if age<25 | age>54
+(3,417,658 observations deleted)
+
+. drop if wkswork1<35
+(619,683 observations deleted)
+
+. drop if uhrswork1<35
+(228,264 observations deleted)
+
+. drop if incwage==0
+(99,812 observations deleted)
+
+. sum q*
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+    qhigrade |    175,150    .0050471    .0708637          0          1
+  quhrswork1 |  1,319,212    .0310125    .3508392          0          4
+    qwkswork |  1,078,128    .0093347    .0961643          0          1
+    qincwage |  1,477,452    .0646877    .3059889          0          3
+
+. drop if qhigrade==4 | quhrswork1==1 | qwkswork==1 | qincwage~=0
+(88,227 observations deleted)
+
+. tab higrade
+
+    higrade |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         10 |      1,055        0.21        0.21
+         31 |        104        0.02        0.23
+         40 |        175        0.03        0.26
+         41 |        124        0.02        0.29
+         50 |        591        0.12        0.40
+         51 |        260        0.05        0.46
+         60 |      1,020        0.20        0.66
+         61 |        264        0.05        0.71
+         70 |      1,189        0.23        0.94
+         71 |        368        0.07        1.02
+         80 |      1,333        0.26        1.28
+         81 |        630        0.12        1.40
+         90 |      4,379        0.86        2.27
+         91 |        855        0.17        2.44
+        100 |      2,060        0.41        2.84
+        101 |      1,763        0.35        3.19
+        110 |      8,448        1.67        4.86
+        111 |      3,381        0.67        5.52
+        120 |      6,151        1.21        6.74
+        121 |      5,549        1.09        7.83
+        130 |      9,981        1.97        9.80
+        131 |      6,422        1.27       11.07
+        140 |      9,418        1.86       12.92
+        141 |      5,437        1.07       14.00
+        150 |    184,982       36.49       50.48
+        151 |     14,726        2.90       53.39
+        160 |     21,812        4.30       57.69
+        161 |     14,102        2.78       60.47
+        170 |     40,330        7.95       68.42
+        171 |      8,344        1.65       70.07
+        180 |     11,819        2.33       72.40
+        181 |      5,684        1.12       73.52
+        190 |     70,261       13.86       87.38
+        191 |      6,168        1.22       88.60
+        200 |     12,435        2.45       91.05
+        201 |      4,293        0.85       91.90
+        210 |     41,087        8.10      100.00
+------------+-----------------------------------
+      Total |    507,000      100.00
+
+. keep if educ99==10 | educ99==14 | higrade==150 | higrade==190
+(825,636 observations deleted)
+
+. 
+. gen ed12=0
+
+. gen ed16=0
+
+. replace ed12=1 if educ99==10 | higrade==150
+(451,001 real changes made)
+
+. replace ed16=1 if educ99==14 | higrade==190
+(112,588 real changes made)
+
+. 
+. gen  wage = incwage/(wkswork1*uhrswork1)
+(64,166 missing values generated)
+
+. gen lwage =ln(wage)
+(64,166 missing values generated)
+
+. 
+. gen female=sex-1
+
+. 
+. replace race=888 if hispan>0
+(65,392 real changes made)
+
+. recode  race 100=1 200=2 888=3 650/652=4 else=5
+(race: 563589 changes made)
+
+. 
+. tab statefip, gen(stated)
+
+   statefip |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      7,326        1.30        1.30
+          2 |      6,950        1.23        2.53
+          4 |      6,511        1.16        3.69
+          5 |      7,138        1.27        4.95
+          6 |     39,064        6.93       11.89
+          8 |      8,859        1.57       13.46
+          9 |      7,849        1.39       14.85
+         10 |      7,080        1.26       16.11
+         11 |      4,213        0.75       16.85
+         12 |     24,205        4.29       21.15
+         13 |      9,705        1.72       22.87
+         15 |      7,458        1.32       24.19
+         16 |      6,390        1.13       25.33
+         17 |     20,673        3.67       29.00
+         18 |     10,162        1.80       30.80
+         19 |      9,311        1.65       32.45
+         20 |      7,464        1.32       33.78
+         21 |      7,356        1.31       35.08
+         22 |      6,054        1.07       36.16
+         23 |      7,871        1.40       37.55
+         24 |      9,295        1.65       39.20
+         25 |     14,310        2.54       41.74
+         26 |     18,373        3.26       45.00
+         27 |      9,524        1.69       46.69
+         28 |      5,986        1.06       47.75
+         29 |      8,877        1.58       49.33
+         30 |      6,291        1.12       50.44
+         31 |      7,873        1.40       51.84
+         32 |      8,456        1.50       53.34
+         33 |      7,571        1.34       54.68
+         34 |     18,985        3.37       58.05
+         35 |      7,179        1.27       59.33
+         36 |     31,882        5.66       64.98
+         37 |     16,124        2.86       67.84
+         38 |      6,762        1.20       69.04
+         39 |     22,896        4.06       73.11
+         40 |      7,053        1.25       74.36
+         41 |      6,208        1.10       75.46
+         42 |     24,988        4.43       79.89
+         44 |      6,366        1.13       81.02
+         45 |      7,622        1.35       82.38
+         46 |      8,266        1.47       83.84
+         47 |      7,530        1.34       85.18
+         48 |     27,886        4.95       90.13
+         49 |      6,727        1.19       91.32
+         50 |      6,925        1.23       92.55
+         51 |     10,174        1.81       94.35
+         53 |      7,195        1.28       95.63
+         54 |      7,015        1.24       96.88
+         55 |     10,678        1.89       98.77
+         56 |      6,933        1.23      100.00
+------------+-----------------------------------
+      Total |    563,589      100.00
+
+. tab age     , gen(aged)
+
+        age |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         25 |     20,209        3.59        3.59
+         26 |     20,637        3.66        7.25
+         27 |     20,582        3.65       10.90
+         28 |     20,873        3.70       14.60
+         29 |     20,776        3.69       18.29
+         30 |     21,599        3.83       22.12
+         31 |     21,211        3.76       25.89
+         32 |     20,803        3.69       29.58
+         33 |     20,763        3.68       33.26
+         34 |     20,773        3.69       36.95
+         35 |     21,020        3.73       40.68
+         36 |     20,745        3.68       44.36
+         37 |     20,195        3.58       47.94
+         38 |     20,270        3.60       51.54
+         39 |     20,025        3.55       55.09
+         40 |     20,608        3.66       58.75
+         41 |     19,883        3.53       62.27
+         42 |     19,599        3.48       65.75
+         43 |     19,141        3.40       69.15
+         44 |     18,723        3.32       72.47
+         45 |     18,383        3.26       75.73
+         46 |     17,743        3.15       78.88
+         47 |     17,294        3.07       81.95
+         48 |     16,412        2.91       84.86
+         49 |     15,930        2.83       87.69
+         50 |     15,758        2.80       90.48
+         51 |     14,359        2.55       93.03
+         52 |     13,880        2.46       95.49
+         53 |     13,024        2.31       97.80
+         54 |     12,371        2.20      100.00
+------------+-----------------------------------
+      Total |    563,589      100.00
+
+. tab race    , gen(raced)
+
+       race |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |    420,761       74.66       74.66
+          2 |     54,197        9.62       84.27
+          3 |     65,392       11.60       95.88
+          4 |     12,304        2.18       98.06
+          5 |     10,935        1.94      100.00
+------------+-----------------------------------
+      Total |    563,589      100.00
+
+. drop stated1 aged1 raced1
+
+. 
+. reg lwage aged* raced* female  [pweight=perwt] 
+(sum of wgt is   7.8176e+10)
+
+Linear regression                               Number of obs     =    499,423
+                                                F(34, 499388)     =     657.19
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0538
+                                                Root MSE          =     1.8317
+
+------------------------------------------------------------------------------
+             |               Robust
+       lwage |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       aged2 |   .0267748   .0230581     1.16   0.246    -.0184183    .0719679
+       aged3 |   .0590641   .0230452     2.56   0.010     .0138962     .104232
+       aged4 |   .1208738    .022812     5.30   0.000     .0761629    .1655847
+       aged5 |   .1613961   .0228072     7.08   0.000     .1166946    .2060975
+       aged6 |   .1780296   .0227491     7.83   0.000     .1334421    .2226172
+       aged7 |   .2461895   .0228299    10.78   0.000     .2014436    .2909354
+       aged8 |   .2580333   .0229299    11.25   0.000     .2130914    .3029752
+       aged9 |   .3234107   .0227843    14.19   0.000     .2787542    .3680672
+      aged10 |    .373375   .0226212    16.51   0.000     .3290382    .4177117
+      aged11 |   .4647668   .0226152    20.55   0.000     .4204417    .5090919
+      aged12 |   .5022739   .0225338    22.29   0.000     .4581083    .5464394
+      aged13 |   .5567145    .022785    24.43   0.000     .5120567    .6013723
+      aged14 |   .6022764    .022807    26.41   0.000     .5575755    .6469774
+      aged15 |   .6438674   .0226908    28.38   0.000     .5993942    .6883406
+      aged16 |   .6990404   .0225556    30.99   0.000     .6548321    .7432487
+      aged17 |   .7742843   .0225929    34.27   0.000     .7300028    .8185658
+      aged18 |   .7609035   .0227712    33.42   0.000     .7162726    .8055345
+      aged19 |    .827717   .0228731    36.19   0.000     .7828865    .8725476
+      aged20 |    .869853   .0226884    38.34   0.000     .8253843    .9143216
+      aged21 |    .877029   .0228099    38.45   0.000     .8323224    .9217356
+      aged22 |   .9228806   .0231303    39.90   0.000      .877546    .9682151
+      aged23 |   .9468715   .0231741    40.86   0.000      .901451    .9922921
+      aged24 |   .9704088    .023575    41.16   0.000     .9242026    1.016615
+      aged25 |   1.005779    .023472    42.85   0.000     .9597746    1.051783
+      aged26 |   .9750635    .023641    41.24   0.000     .9287278    1.021399
+      aged27 |   .9484964   .0243298    38.98   0.000     .9008107    .9961821
+      aged28 |   .9266864   .0248467    37.30   0.000     .8779876    .9753852
+      aged29 |   .9602338   .0251994    38.11   0.000     .9108437    1.009624
+      aged30 |   .9648709   .0255919    37.70   0.000     .9147116     1.01503
+      raced2 |   .1452654   .0098345    14.77   0.000     .1259901    .1645408
+      raced3 |   .4228303   .0085422    49.50   0.000     .4060878    .4395728
+      raced4 |   .5359357   .0183629    29.19   0.000     .4999451    .5719263
+      raced5 |  -.1145282    .025096    -4.56   0.000    -.1637157   -.0653408
+      female |  -.5371305   .0060702   -88.49   0.000    -.5490279   -.5252331
+       _cons |   .7805623   .0167121    46.71   0.000     .7478071    .8133176
+------------------------------------------------------------------------------
+
+. predict res, residuals
+(64,166 missing values generated)
+
+. 
+. bysort statefip year: egen totwted12=total(perwt*ed12)
+
+. bysort statefip year: egen totwted16=total(perwt*ed16)
+
+. 
+. bysort statefip year: egen meanlwage_ed12=total(perwt*ed12*res/totwted12)
+
+. bysort statefip year: egen meanlwage_ed16=total(perwt*ed16*res/totwted16)
+
+. 
+. gen lreturn_to_ba_styr = meanlwage_ed16 - meanlwage_ed12
+
+. sum lreturn
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+lreturn_to~r |    563,589    .3215134    .2283202  -1.638112   1.508247
+
+. 
+. egen tag=tag(year statefip)
+
+. tab  tag
+
+   tag(year |
+  statefip) |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |    561,855       99.69       99.69
+          1 |      1,734        0.31      100.00
+------------+-----------------------------------
+      Total |    563,589      100.00
+
+. keep if tag==1
+(561,855 observations deleted)
+
+. 
+. keep statefip year lreturn_to_ba_styr medhhincome_ipums_styr
+
+. sum
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+        year |      1,734      1994.5    9.813539       1978       2011
+    statefip |      1,734    28.96078    15.68136          1         56
+medhhincom~r |      1,734    33356.05     13279.6       8727      71794
+lreturn_to~r |      1,734    .2966418    .2594496  -1.638112   1.508247
+
+. *note that some "returns" are less than one
+. sort statefip year
+
+. save                      cpsvars_styr.dta, replace
+file cpsvars_styr.dta saved
+
+. 
+. 
+. 
+. 
+. 
+. use                       age18pop_styr.dta, clear
+
+. rename bpl statefip
+
+. rename yearage18 year
+
+. sort  statefip year
+
+. merge 1:1 statefip year using unemprate_styr
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                           103
+        from master                       102  (_merge==1)
+        from using                          1  (_merge==2)
+
+    matched                             1,836  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. sort  statefip year
+
+. merge 1:1 statefip year using cpsvars_styr.dta
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                           205
+        from master                       205  (_merge==1)
+        from using                          0  (_merge==2)
+
+    matched                             1,734  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. sort  statefip year
+
+. sum
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+    statefip |      1,938    28.96078    15.68088          1         56
+   statename |          0
+        year |      1,938      1994.5    10.96869       1976       2013
+   popage18b |      1,938    77854.85    85792.17       5160     584107
+unemprate_~r |      1,836    6.062886    2.104018   2.258333      17.45
+-------------+---------------------------------------------------------
+medhhincom~r |      1,734    33356.05     13279.6       8727      71794
+lreturn_to~r |      1,734    .2966418    .2594496  -1.638112   1.508247
+
+. gen lnpop18=ln(popage18)
+(1 missing value generated)
+
+. gen lnmedhhinc18=ln(medhhincome_ipums_styr)
+(205 missing values generated)
+
+. rename year yearage18
+
+. rename statefip bpl
+
+. drop statename
+
+. sort yearage18 bpl
+
+. clonevar yearage17 = yearage18
+(1 missing value generated)
+
+. clonevar yearage19 = yearage18
+(1 missing value generated)
+
+. clonevar yearage20 = yearage18
+(1 missing value generated)
+
+. saveold                 statecontrols.dta, replace
+(saving in Stata 13 format)
+(FYI, saveold has options version(12) and version(11) that write files in
+      older Stata formats)
+file statecontrols.dta saved
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Data/cr_statecontrols
+> .log
+  log type:  text
+ closed on:   1 Feb 2018, 13:07:24
+-------------------------------------------------------------------------------

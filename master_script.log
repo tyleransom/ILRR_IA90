@@ -1,0 +1,33 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/master_script.log
+  log type:  text
+ opened on:   1 Feb 2018, 12:51:42
+
+. 
+. **** Dependencies:
+. ** Data files that are too big to store on GitHub:
+. * bpl_vars_80.dat.gz (1980 Census 5% sample)
+. * forshr_vars_80_10.dat.gz (1980, 1990, 2000 5% Census samples; 2010 ACS 1% s
+> ample)
+. * statecontrols.dat.gz (March CPS, 1978-2011)
+. * acs_09_16.dat.gz (2009-2016 ACS)
+. 
+. * Create data
+. cd Data
+/home/data/ransom/CollegeMaj/ACS-immigration/Data
+
+. do cr_foreign_shares.do
+
+. version 14.0
+
+. set more off
+
+. clear all
+
+. set mem 2g
+set memory ignored.
+    Memory no longer needs to be set in modern Statas; memory adjustments are
+    performed on the fly automatically.
+
+. capture log close

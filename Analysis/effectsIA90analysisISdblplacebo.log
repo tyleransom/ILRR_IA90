@@ -1,0 +1,1179 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Analysis/effectsIA90a
+> nalysisISdblplacebo.log
+  log type:  text
+ opened on:  20 Nov 2018, 16:59:53
+
+. 
+. global data_path "../Data/"
+
+. global table_path "../Tables/Placebo/"
+
+. global outreg_path "M:\Immigrants\IA90_Native_Majors\Empirics\Outregs\"
+
+. 
+. local EY = int(10000*uniform()) // NO seed; needs to be random
+
+. !gunzip -fc ${data_path}acs_09_16.dat.gz > ${data_path}tmp`EY'.dat
+
+
+. 
+. quietly infix                  ///
+>   int     year        1-4      ///
+>   byte    datanum     5-6      ///
+>   double  serial      7-14     ///
+>   float   hhwt        15-24    ///
+>   byte    statefip    25-26    ///
+>   byte    gq          27-27    ///
+>   byte    ownershp    28-28    ///
+>   byte    ownershpd   29-30    ///
+>   int     pernum      31-34    ///
+>   float   perwt       35-44    ///
+>   byte    nchild      45-45    ///
+>   byte    nchlt5      46-46    ///
+>   byte    yngch       47-48    ///
+>   byte    sex         49-49    ///
+>   int     age         50-52    ///
+>   byte    marst       53-53    ///
+>   byte    race        54-54    ///
+>   int     raced       55-57    ///
+>   byte    hispan      58-58    ///
+>   int     hispand     59-61    ///
+>   int     bpl         62-64    ///
+>   long    bpld        65-69    ///
+>   byte    citizen     70-70    ///
+>   int     yrnatur     71-74    ///
+>   byte    yrsusa1     75-76    ///
+>   byte    language    77-78    ///
+>   int     languaged   79-82    ///
+>   byte    speakeng    83-83    ///
+>   byte    school      84-84    ///
+>   byte    educ        85-86    ///
+>   int     educd       87-89    ///
+>   byte    degfield    90-91    ///
+>   int     degfieldd   92-95    ///
+>   byte    degfield2   96-97    ///
+>   int     degfield2d  98-101   ///
+>   byte    empstat     102-102  ///
+>   byte    empstatd    103-104  ///
+>   int     occ1990     105-107  ///
+>   int     ind1990     108-110  ///
+>   byte    classwkr    111-111  ///
+>   byte    classwkrd   112-113  ///
+>   byte    wkswork2    114-114  ///
+>   byte    uhrswork    115-116  ///
+>   byte    workedyr    117-117  ///
+>   long    ftotinc     118-124  ///
+>   long    incwage     125-130  ///
+>   long    incearn     131-137  ///
+>   using ${data_path}tmp`EY'.dat ///
+>   if age>=25 & age<=55 & bpl<=56 & year>=2009 & year<=2016 
+
+. *extract includes years 2009-16 and ages 18+; no other restrictions 
+. 
+. !rm -f ${data_path}tmp`EY'.dat
+
+
+. 
+. tab year
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2009 |  1,029,040       12.76       12.76
+       2010 |  1,027,573       12.74       25.50
+       2011 |  1,017,642       12.62       38.13
+       2012 |  1,007,196       12.49       50.62
+       2013 |  1,010,778       12.54       63.15
+       2014 |    995,743       12.35       75.50
+       2015 |    991,062       12.29       87.79
+       2016 |    984,535       12.21      100.00
+------------+-----------------------------------
+      Total |  8,063,569      100.00
+
+. 
+. replace perwt    = perwt    / 100
+(8,063,569 real changes made)
+
+. gen     yearofbirth=year-age
+
+. gen     yearage18=yearofbirth+18
+
+. keep if yearage18>=1979 & yearage18<=1994
+(3,875,690 observations deleted)
+
+. *Define individual controls
+. gen     ed16plus=0
+
+. replace ed16plus=1 if educd>=100
+(1,347,461 real changes made)
+
+. gen     female=sex-1
+
+. gen     male=1-female
+
+. gen     white=0
+
+. gen     black=0
+
+. replace white=1 if race==1 & hispan==0
+(3,297,641 real changes made)
+
+. replace black=1 if race==2 & hispan==0
+(472,878 real changes made)
+
+. recode  hispan 0=0 else=1
+(hispan: 92264 changes made)
+
+. gen     raceg=0
+
+. replace raceg=1 if white==1
+(3,297,641 real changes made)
+
+. replace raceg=2 if black==1
+(472,878 real changes made)
+
+. replace raceg=3 if hispan==1
+(272,074 real changes made)
+
+. 
+. qui tab bpl, gen(stdum)
+
+. gen trend = (yearage18-1979)/12
+
+. 
+. local statetrends = ""
+
+. forv st=1/51 {
+  2.     gen st`st'Xtrend = stdum`st'*trend
+  3.     local temp = "st`st'Xtrend"
+  4.     local statetrends : list statetrends | temp
+  5. }
+
+. 
+. local statetrends2 = ""
+
+. forv st=1/51 {
+  2.     gen st`st'Xtrend2 = stdum`st'*trend^2
+  3.     local temp = "st`st'Xtrend2"
+  4.     local statetrends2 : list statetrends2 | temp
+  5. }
+
+. 
+. gen     moved = statefip!=bpl
+
+. 
+. sort  yearage18 bpl
+
+. merge m:1 yearage18 bpl using ${data_path}statecontrols.dta
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         1,123
+        from master                         0  (_merge==1)
+        from using                      1,123  (_merge==2)
+
+    matched                         4,187,879  (_merge==3)
+    -----------------------------------------
+
+. tab  _merge
+
+                 _merge |      Freq.     Percent        Cum.
+------------------------+-----------------------------------
+         using only (2) |      1,123        0.03        0.03
+            matched (3) |  4,187,879       99.97      100.00
+------------------------+-----------------------------------
+                  Total |  4,189,002      100.00
+
+. drop if _merge==2
+(1,123 observations deleted)
+
+. drop _merge
+
+. sort bpl
+
+. merge m:1 bpl using ${data_path}bpl_vars_80.dta
+(note: variable bpl was int, now float to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                         4,187,879  (_merge==3)
+    -----------------------------------------
+
+. tab  _merge
+
+                 _merge |      Freq.     Percent        Cum.
+------------------------+-----------------------------------
+            matched (3) |  4,187,879      100.00      100.00
+------------------------+-----------------------------------
+                  Total |  4,187,879      100.00
+
+. drop _merge
+
+. gen     p8689=0
+
+. replace p8689=1 if inrange(yearage18,1986,1989)
+(1,021,812 real changes made)
+
+. gen     p9194=0
+
+. replace p9194=1 if inrange(yearage18,1991,1994)
+(877,809 real changes made)
+
+. merge m:1 bpl using ${data_path}bpl_forshr_figure1.dta, keepusing(forshr_16pl
+> _stemo_00_90_2559 forshr_16pl_stemo_00_2559) nogen
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                         4,187,879  
+    -----------------------------------------
+
+. sum *shr* [aweight=perwt]
+
+    Variable |     Obs      Weight        Mean   Std. Dev.       Min        Max
+-------------+-----------------------------------------------------------------
+afrshr_~2559 | 4187879   422287348     .002824   .0014243   .0002954   .0111516
+asishr_~2559 | 4187879   422287348    .0303017    .021251   .0042711   .1068077
+canshr_~2559 | 4187879   422287348    .0042823   .0026621   .0004047   .0137276
+chishr_~2559 | 4187879   422287348    .0056874   .0042288   .0004318   .0175684
+cjkshr_~2559 | 4187879   422287348     .010803   .0081404   .0017271   .0451188
+-------------+-----------------------------------------------------------------
+cukshr_~2559 | 4187879   422287348    .0086917    .004328   .0026144   .0211193
+forshr_ed1~9 | 4187879   422287348    .0776849    .044319    .020915   .1568837
+indshr_~2559 | 4187879   422287348    .0065076   .0035617    .000504   .0161344
+latshr_~2559 | 4187879   422287348    .0118511   .0126159   .0014771    .067377
+oasshr_~2559 | 4187879   422287348    .0181067   .0153425   .0020679   .0862448
+-------------+-----------------------------------------------------------------
+roashr_~2559 | 4187879   422287348    .0129911   .0114514   .0011817   .0586944
+roeshr_~2559 | 4187879   422287348    .0183793   .0110098   .0039216    .044769
+uksshr_~2559 | 4187879   422287348    .0044093   .0021424   .0008715   .0086546
+forshr_16p.. | 4187879   422287348    .1202704   .0582512   .0136986   .2155992
+forshr_16p.. | 4187879   422287348    .1335598   .0621656    .021645   .2450905
+-------------+-----------------------------------------------------------------
+forshr_ed_.. | 4187879   422287348     .008224   .0046045   .0004284   .0175661
+forshr_ed_.. | 4187879   422287348    .0141713   .0068839   .0025202   .0273954
+forshr_all.. | 4187879   422287348    .0016436   .0010926   .0000779   .0038946
+forshr_all.. | 4187879   422287348    .0027894   .0016201   .0004913   .0060739
+forshr_16p.. | 4187879   422287348    .0745473   .0434041   .0193258   .1517536
+-------------+-----------------------------------------------------------------
+forshr_16p.. | 4187879   422287348    .0710544   .0428503   .0169811   .1506558
+forshr_ed_.. | 4187879   422287348    .0694609    .040387   .0187364   .1427431
+forshr_ed_.. | 4187879   422287348    .0635135   .0382719   .0156863   .1369535
+forshr_all.. | 4187879   422287348    .0139052   .0095105   .0025419   .0329159
+forshr_all.. | 4187879   422287348    .0127594   .0090026    .002257   .0315809
+-------------+-----------------------------------------------------------------
+z_afrsh~2559 | 4187879   422287348    1.691007   .8528788   .1769003   6.677673
+z2afrsh~2559 | 4187879   422287348    .8455033   .4264394   .0884501   3.338837
+z_asish~2559 | 4187879   422287348    1.637968   1.148729   .2308741   5.773526
+z2asish~2559 | 4187879   422287348     .818984   .5743643    .115437   2.886763
+z_cansh~2559 | 4187879   422287348    1.379912   .8578372    .130407   4.423509
+-------------+-----------------------------------------------------------------
+z2cansh~2559 | 4187879   422287348    .6899562   .4289186   .0652035   2.211754
+z_chish~2559 | 4187879   422287348    1.703058   1.266281   .1292935   5.260741
+z2chish~2559 | 4187879   422287348    .8515289   .6331403   .0646468   2.630371
+z_cjksh~2559 | 4187879   422287348    1.474962   1.111434   .2358079   6.160194
+z2cjksh~2559 | 4187879   422287348    .7374811   .5557172    .117904   3.080097
+-------------+-----------------------------------------------------------------
+z_cuksh~2559 | 4187879   422287348    1.882495    .937395   .5662394   4.574162
+z2cuksh~2559 | 4187879   422287348    .9412474   .4686975   .2831197   2.287081
+z_forshr_e.. | 4187879   422287348     2.21101   1.261375   .5952684    4.46511
+z2forshr_e.. | 4187879   422287348    1.105505   .6306874   .2976342   2.232555
+z_indsh~2559 | 4187879   422287348    2.038587   1.115756   .1578945   5.054294
+-------------+-----------------------------------------------------------------
+z2indsh~2559 | 4187879   422287348    1.019293   .5578779   .0789473   2.527147
+z_latsh~2559 | 4187879   422287348    1.150798   1.225071   .1434343    6.54265
+z2latsh~2559 | 4187879   422287348    .5753988   .6125357   .0717172   3.271325
+z_oassh~2559 | 4187879   422287348    1.297034   1.099026   .1481328   6.177953
+z2oassh~2559 | 4187879   422287348    .6485168   .5495132   .0740664   3.088976
+-------------+-----------------------------------------------------------------
+z_roash~2559 | 4187879   422287348    1.312655   1.157078   .1194002   5.930622
+z2roash~2559 | 4187879   422287348    .6563274   .5785389   .0597001   2.965311
+z_roesh~2559 | 4187879   422287348    2.144596   1.284679    .457589   5.223885
+z2roesh~2559 | 4187879   422287348    1.072298   .6423394   .2287945   2.611942
+z_ukssh~2559 | 4187879   422287348    2.014337   .9787186   .3981125   3.953717
+-------------+-----------------------------------------------------------------
+z2ukssh~2559 | 4187879   422287348    1.007169   .4893593   .1990563   1.976859
+z_forshr_1.. | 4187879   422287348    2.492822   1.207363    .283929   4.468687
+z2forshr_1.. | 4187879   422287348    1.246411   .6036816   .1419645   2.234343
+z_forshr_1.. | 4187879   422287348    2.583759   1.202615   .4187303    4.74136
+z2forshr_1.. | 4187879   422287348     1.29188   .6013076   .2093652    2.37068
+-------------+-----------------------------------------------------------------
+z_forshr_e.. | 4187879   422287348    2.092944   1.171808   .1090372    4.47044
+z2forshr_e.. | 4187879   422287348    1.046472   .5859038   .0545186    2.23522
+z_forshr_e.. | 4187879   422287348    2.357261   1.145067   .4192035   4.556946
+z2forshr_e.. | 4187879   422287348    1.178631   .5725335   .2096018   2.278473
+z_forshr_a.. | 4187879   422287348    1.796547   1.194226   .0851882   4.257005
+-------------+-----------------------------------------------------------------
+z2forshr_a.. | 4187879   422287348    .8982736   .5971129   .0425941   2.128503
+z_forshr_a.. | 4187879   422287348    2.023296   1.175133   .3563705   4.405735
+z2forshr_a.. | 4187879   422287348    1.011648   .5875664   .1781853   2.202868
+z_forshr_1.. | 4187879   422287348    2.163777   1.259828   .5609438   4.404735
+z2forshr_1.. | 4187879   422287348    1.081889   .6299139   .2804719   2.202367
+-------------+-----------------------------------------------------------------
+z_forshr_1.. | 4187879   422287348    2.096422   1.264276   .5010193    4.44502
+z2forshr_1.. | 4187879   422287348    1.048211    .632138   .2505096    2.22251
+z_forshr_e.. | 4187879   422287348    2.157184   1.254264    .581879   4.433043
+z2forshr_e.. | 4187879   422287348    1.078592   .6271321   .2909395   2.216522
+z_forshr_e.. | 4187879   422287348    2.078447   1.252429   .5133252   4.481731
+-------------+-----------------------------------------------------------------
+z2forshr_e.. | 4187879   422287348    1.039223   .6262144   .2566626   2.240866
+z_forshr_a.. | 4187879   422287348    1.760517   1.204105   .3218273   4.167438
+z2forshr_a.. | 4187879   422287348    .8802585   .6020523   .1609136   2.083719
+z_forshr_a.. | 4187879   422287348    1.698252   1.198224   .3004069   4.203345
+z2forshr_a.. | 4187879   422287348    .8491259   .5991119   .1502035   2.101672
+-------------+-----------------------------------------------------------------
+fors~00_2559 | 4187879   422287348    .2264936   .1053974   .0163056   .4363353
+fors~90_2559 | 4187879   422287348    .0807874   .0366815   -.029964   .1440274
+
+. 
+. * Express exposure in 10pp units
+. foreach var of varlist *shr* {
+  2.     replace `var' = `var'*10
+  3. }
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+(4,187,879 real changes made)
+
+. 
+. gen     forshr_16pl_stemo_80_2559_p8689  = forshr_16pl_stemo_80_2559*p8689
+
+. gen     forshr_16pl_stem2_80_2559_p8689  = forshr_16pl_stem2_80_2559*p8689
+
+. gen     forshr_16pl_nstem_80_2559_p8689  = forshr_16pl_nstemo_80_2559*p8689
+
+. gen     forshr_ed16plus_80_2559_p8689    = forshr_ed16plus_80_2559*p8689
+
+. gen     forshr_16pl_stemo0090_2559_p8689 = forshr_16pl_stemo_00_90_2559*p8689
+
+. gen     forshr_16pl_stemo_00_2559_p8689  = forshr_16pl_stemo_00_2559*p8689
+
+. gen     forshr_16pl_stemo_80_2559_p9194  = forshr_16pl_stemo_80_2559*p9194
+
+. gen     forshr_16pl_stem2_80_2559_p9194  = forshr_16pl_stem2_80_2559*p9194
+
+. gen     forshr_16pl_nstem_80_2559_p9194  = forshr_16pl_nstemo_80_2559*p9194
+
+. gen     forshr_ed16plus_80_2559_p9194    = forshr_ed16plus_80_2559*p9194
+
+. gen     forshr_16pl_stemo0090_2559_p9194 = forshr_16pl_stemo_00_90_2559*p9194
+
+. gen     forshr_16pl_stemo_00_2559_p9194  = forshr_16pl_stemo_00_2559*p9194
+
+. 
+. gen y81=0
+
+. gen y82=0
+
+. gen y83=0
+
+. gen y84=0
+
+. gen y85=0
+
+. gen y86=0
+
+. gen y87=0
+
+. gen y88=0
+
+. gen y89=0
+
+. gen y91=0
+
+. gen y92=0
+
+. gen y93=0
+
+. gen y94=0
+
+. replace y81=1 if yearage18==1981
+(306,081 real changes made)
+
+. replace y82=1 if yearage18==1982
+(300,309 real changes made)
+
+. replace y83=1 if yearage18==1983
+(286,407 real changes made)
+
+. replace y84=1 if yearage18==1984
+(266,661 real changes made)
+
+. replace y85=1 if yearage18==1985
+(255,871 real changes made)
+
+. replace y86=1 if yearage18==1986
+(248,256 real changes made)
+
+. replace y87=1 if yearage18==1987
+(252,510 real changes made)
+
+. replace y88=1 if yearage18==1988
+(260,632 real changes made)
+
+. replace y89=1 if yearage18==1989
+(260,414 real changes made)
+
+. replace y91=1 if yearage18==1991
+(223,099 real changes made)
+
+. replace y92=1 if yearage18==1992
+(217,269 real changes made)
+
+. replace y93=1 if yearage18==1993
+(219,759 real changes made)
+
+. replace y94=1 if yearage18==1994
+(217,682 real changes made)
+
+. gen     forshr_16pl_stemo_80_2559_1981=forshr_16pl_stemo_80_2559*y81
+
+. gen     forshr_16pl_stemo_80_2559_1982=forshr_16pl_stemo_80_2559*y82
+
+. gen     forshr_16pl_stemo_80_2559_1983=forshr_16pl_stemo_80_2559*y83
+
+. gen     forshr_16pl_stemo_80_2559_1984=forshr_16pl_stemo_80_2559*y84
+
+. gen     forshr_16pl_stemo_80_2559_1986=forshr_16pl_stemo_80_2559*y86
+
+. gen     forshr_16pl_stemo_80_2559_1987=forshr_16pl_stemo_80_2559*y87
+
+. gen     forshr_16pl_stemo_80_2559_1988=forshr_16pl_stemo_80_2559*y88
+
+. gen     forshr_16pl_stemo_80_2559_1989=forshr_16pl_stemo_80_2559*y89
+
+. gen     forshr_16pl_stemo_80_2559_1991=forshr_16pl_stemo_80_2559*y91
+
+. gen     forshr_16pl_stemo_80_2559_1992=forshr_16pl_stemo_80_2559*y92
+
+. gen     forshr_16pl_stemo_80_2559_1993=forshr_16pl_stemo_80_2559*y93
+
+. gen     forshr_16pl_stemo_80_2559_1994=forshr_16pl_stemo_80_2559*y94
+
+. 
+. gen     stem1maj=degfieldd
+
+. recode  stem1maj  1100=0    1101=0  1102=0  1103=1  1104=1  1105=1  1106=1  1
+> 199=0  1300=1  1301=1  1302=1  1303=0  1401=0  1501=0  1900=0  1901=0  1902=0
+>   1903=0  1904=0  2001=1  2100=1  2101=1  2102=1  2105=1  2106=1  2107=1  220
+> 1=0  2300=0  2301=0  2303=0  2304=0  2305=0  2306=0  2307=0  2308=0  2309=0  
+> 2310=0  2311=0  2312=0  2313=0  2314=0  2399=0  2400=1  2401=1  2402=1  2403=
+> 1  2404=1  2405=1  2406=1  2407=1  2408=1  2409=1  2410=1  2411=1  2412=1  24
+> 13=1  2414=1  2415=1  2416=1  2417=1  2418=1  2419=1  2499=1  2500=1  2501=1 
+>  2502=1  2503=1  2504=1  2599=1  2600=0  2601=0  2602=0  2603=0  2901=0  3200
+> =0  3201=0  3202=0  3300=0  3301=0  3302=0  3400=0  3401=0  3402=0  3501=0  3
+> 600=1  3601=1  3602=1  3603=1  3604=1  3605=1  3606=1  3607=1  3608=1  3609=1
+>   3611=1  3699=1  3700=1  3701=1  3702=1  3801=1  4000=0  4001=0  4002=1  400
+> 3=1  4005=1  4006=1  4007=0  4008=0  4101=0  4801=0  4901=0  5000=1  5001=1  
+> 5002=1  5003=1  5004=1  5005=1  5006=1  5007=1  5008=1  5098=1  5102=1  5200=
+> 0  5201=0  5202=0  5203=0  5205=0  5206=0  5299=0  5301=0  5400=0  5401=0  54
+> 02=0  5403=0  5404=0  5500=0  5501=0  5502=0  5503=0  5504=0  5505=0  5506=0 
+>  5507=0  5599=0  5601=0  5701=0  5801=0  5901=1  6000=0  6001=0  6002=0  6003
+> =0  6004=0  6005=0  6006=0  6007=0  6099=0  6100=0  6102=0  6103=0  6104=0  6
+> 105=0  6106=1  6107=0  6108=1  6109=0  6110=0  6199=0  6200=0  6201=0  6202=1
+>   6203=0  6204=0  6205=0  6206=0  6207=0  6209=0  6210=0  6211=0  6212=1  629
+> 9=0  6402=0  6403=0
+(stem1maj: 1347461 changes made)
+
+. gen     stem2maj=degfield2d
+
+. recode  stem2maj  1100=0    1101=0  1102=0  1103=1  1104=1  1105=1  1106=1  1
+> 199=0  1300=1  1301=1  1302=1  1303=0  1401=0  1501=0  1900=0  1901=0  1902=0
+>   1903=0  1904=0  2001=1  2100=1  2101=1  2102=1  2105=1  2106=1  2107=1  220
+> 1=0  2300=0  2301=0  2303=0  2304=0  2305=0  2306=0  2307=0  2308=0  2309=0  
+> 2310=0  2311=0  2312=0  2313=0  2314=0  2399=0  2400=1  2401=1  2402=1  2403=
+> 1  2404=1  2405=1  2406=1  2407=1  2408=1  2409=1  2410=1  2411=1  2412=1  24
+> 13=1  2414=1  2415=1  2416=1  2417=1  2418=1  2419=1  2499=1  2500=1  2501=1 
+>  2502=1  2503=1  2504=1  2599=1  2600=0  2601=0  2602=0  2603=0  2901=0  3200
+> =0  3201=0  3202=0  3300=0  3301=0  3302=0  3400=0  3401=0  3402=0  3501=0  3
+> 600=1  3601=1  3602=1  3603=1  3604=1  3605=1  3606=1  3607=1  3608=1  3609=1
+>   3611=1  3699=1  3700=1  3701=1  3702=1  3801=1  4000=0  4001=0  4002=1  400
+> 3=1  4005=1  4006=1  4007=0  4008=0  4101=0  4801=0  4901=0  5000=1  5001=1  
+> 5002=1  5003=1  5004=1  5005=1  5006=1  5007=1  5008=1  5098=1  5102=1  5200=
+> 0  5201=0  5202=0  5203=0  5205=0  5206=0  5299=0  5301=0  5400=0  5401=0  54
+> 02=0  5403=0  5404=0  5500=0  5501=0  5502=0  5503=0  5504=0  5505=0  5506=0 
+>  5507=0  5599=0  5601=0  5701=0  5801=0  5901=1  6000=0  6001=0  6002=0  6003
+> =0  6004=0  6005=0  6006=0  6007=0  6099=0  6100=0  6102=0  6103=0  6104=0  6
+> 105=0  6106=1  6107=0  6108=1  6109=0  6110=0  6199=0  6200=0  6201=0  6202=1
+>   6203=0  6204=0  6205=0  6206=0  6207=0  6209=0  6210=0  6211=0  6212=1  629
+> 9=0  6402=0  6403=0
+(stem2maj: 144260 changes made)
+
+. egen    stem_maj=rowmax(stem1maj stem2maj)
+
+. replace stem_maj=0 if educd<100
+(0 real changes made)
+
+. 
+. gen     business=0
+
+. gen     education=0
+
+. gen     health=0
+
+. gen     libarts=0
+
+. gen     socscience=0
+
+. gen     othermajor=0
+
+. replace business=1   if stem_maj==0 & (degfield==62)
+(303,072 real changes made)
+
+. replace education=1  if stem_maj==0 & (degfield==23)
+(154,943 real changes made)
+
+. replace health=1     if stem_maj==0 & (degfield==61)
+(83,541 real changes made)
+
+. replace libarts=1    if stem_maj==0 & (degfield==15 | degfield==19 | degfield
+> ==26 | degfield==33 | degfield==34 | degfield==35 | degfield==40 | degfield==
+> 48 | degfield==49 | degfield==60 | degfield==64)
+(248,893 real changes made)
+
+. replace socscience=1 if stem_maj==0 & (degfield==32 | degfield==52 | degfield
+> ==53 | degfield==54 | degfield==55)
+(219,228 real changes made)
+
+. replace othermajor=1 if stem_maj==0 & (degfield==11 | degfield==13 | degfield
+> ==56 | degfield==57 | degfield==58   |   degfield==14 | degfield==22 | degfie
+> ld==41   |  degfield==29)
+(45,251 real changes made)
+
+. 
+. gen     computersci=0
+
+. gen     engineering=0
+
+. gen     technology =0
+
+. gen     biosciences=0
+
+. gen     physciences=0
+
+. gen     maths=0
+
+. replace computersci=1 if degfield==21
+(41,277 real changes made)
+
+. replace engineering=1 if degfield==24
+(85,103 real changes made)
+
+. replace technology =1 if degfield==25
+(10,603 real changes made)
+
+. replace biosciences=1 if degfield==36
+(57,161 real changes made)
+
+. replace physciences=1 if degfield==50
+(33,274 real changes made)
+
+. replace maths=1       if degfield==37
+(16,468 real changes made)
+
+. gen     allotherstem= stem_maj - computersci - engineering - technology - bio
+> sciences - physciences - maths
+
+. 
+. tab year       , gen(yeardum)
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2009 |    519,540       12.41       12.41
+       2010 |    523,251       12.49       24.90
+       2011 |    520,329       12.42       37.32
+       2012 |    522,270       12.47       49.80
+       2013 |    528,250       12.61       62.41
+       2014 |    523,541       12.50       74.91
+       2015 |    525,442       12.55       87.46
+       2016 |    525,256       12.54      100.00
+------------+-----------------------------------
+      Total |  4,187,879      100.00
+
+. tab age        , gen(agedum)
+
+        age |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         33 |     26,751        0.64        0.64
+         34 |     54,369        1.30        1.94
+         35 |     82,851        1.98        3.92
+         36 |    108,425        2.59        6.50
+         37 |    137,613        3.29        9.79
+         38 |    171,808        4.10       13.89
+         39 |    202,916        4.85       18.74
+         40 |    245,314        5.86       24.60
+         41 |    236,807        5.65       30.25
+         42 |    244,232        5.83       36.08
+         43 |    249,066        5.95       42.03
+         44 |    255,148        6.09       48.12
+         45 |    270,358        6.46       54.58
+         46 |    269,504        6.44       61.01
+         47 |    275,708        6.58       67.60
+         48 |    284,697        6.80       74.39
+         49 |    254,318        6.07       80.47
+         50 |    234,825        5.61       86.07
+         51 |    189,896        4.53       90.61
+         52 |    155,506        3.71       94.32
+         53 |    117,481        2.81       97.13
+         54 |     79,486        1.90       99.03
+         55 |     40,800        0.97      100.00
+------------+-----------------------------------
+      Total |  4,187,879      100.00
+
+. tab yearofbirth, gen(yearbirthdum)
+
+yearofbirth |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1961 |    322,365        7.70        7.70
+       1962 |    313,350        7.48       15.18
+       1963 |    306,081        7.31       22.49
+       1964 |    300,309        7.17       29.66
+       1965 |    286,407        6.84       36.50
+       1966 |    266,661        6.37       42.87
+       1967 |    255,871        6.11       48.98
+       1968 |    248,256        5.93       54.90
+       1969 |    252,510        6.03       60.93
+       1970 |    260,632        6.22       67.16
+       1971 |    260,414        6.22       73.37
+       1972 |    237,214        5.66       79.04
+       1973 |    223,099        5.33       84.37
+       1974 |    217,269        5.19       89.55
+       1975 |    219,759        5.25       94.80
+       1976 |    217,682        5.20      100.00
+------------+-----------------------------------
+      Total |  4,187,879      100.00
+
+. drop yeardum1 agedum1 yearbirthdum1 
+
+. 
+. gen     stemocc=occ1990
+
+. recode  stemocc  44/64=1 66/83=1 229=1                  else=0
+(stemocc: 4187879 changes made)
+
+. gen     employed=0
+
+. replace employed=1 if empstat==1
+(3,184,007 real changes made)
+
+. gen     emp_stemocc=employed*stemocc
+
+. gen     workedly=0
+
+. replace workedly=1 if workedyr==3
+(3,418,916 real changes made)
+
+. gen     lincearn=ln(incearn)
+(774,108 missing values generated)
+
+. 
+. preserve
+
+.     gen unemployed=0
+
+.     gen nilf=0
+
+.     replace unemployed=1 if empstat==2
+(212,076 real changes made)
+
+.     replace nilf=1       if empstat==3
+(791,796 real changes made)
+
+.     collapse stem_maj stemocc unemployed nilf lincearn [aweight=perwt] if inr
+> ange(yearage18,1981,1994), by(bpl yearage18 ed16plus female black)
+
+.     save ${data_path}outcome_means_86_94, replace
+file ../Data/outcome_means_86_94.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     gen unemployed=0
+
+.     gen nilf=0
+
+.     replace unemployed=1 if empstat==2
+(212,076 real changes made)
+
+.     replace nilf=1       if empstat==3
+(791,796 real changes made)
+
+.     collapse stem_maj stemocc unemployed nilf lincearn [aweight=perwt] if inr
+> ange(yearage18,1981,1994), by(bpl yearage18 female black)
+
+.     save ${data_path}outcome_means_uncondBA_86_94, replace
+file ../Data/outcome_means_uncondBA_86_94.dta saved
+
+. restore
+
+. 
+. preserve
+
+.     gen unemployed=0
+
+.     gen nilf=0
+
+.     replace unemployed=1 if empstat==2
+(212,076 real changes made)
+
+.     replace nilf=1       if empstat==3
+(791,796 real changes made)
+
+.     collapse stemocc unemployed nilf lincearn [aweight=perwt] if inrange(year
+> age18,1981,1994), by(bpl yearage18 ed16plus stem_maj female black)
+
+.     save ${data_path}outcome_means_stem_maj_86_94, replace
+file ../Data/outcome_means_stem_maj_86_94.dta saved
+
+. restore
+
+. 
+. 
+. 
+. 
+. capture program drop first_coef
+
+. program first_coef
+  1.     syntax, in1(string) in2(string) OUTnames(string)
+  2.     local firstname : word 3 of `in1'
+  3.     
+.     forval j = 1/4 {
+  4.     local out`j' : word `j' of `outnames'
+  5.         if "`out`j''" == "" {
+  6.             local J = `j' - 1
+  7.             di "only `J' names in out(): 4 names expected"
+  8.             exit 498
+  9.         }
+ 10.     }
+ 11.     
+.     local trash : word 5 of `outnames'
+ 12.     if "`trash'" != "" {
+ 13.         di "trailing `trash' in out(): 4 names expected"
+ 14.         exit 498
+ 15.     }
+ 16.     
+.     c_local `out4' = `in2'
+ 17.     c_local `out1' = _b[`firstname']
+ 18.     c_local `out2' = _se[`firstname']
+ 19.     
+.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`firstname']/_se[`firstname']))
+ 20.     if `Pvalue' <= 0.01         c_local `out3' "***"  
+ 21.     else if `Pvalue' <= 0.05    c_local `out3' "**"
+ 22.     else if `Pvalue' <= 0.1     c_local `out3' "*"
+ 23.     else                        c_local `out3' " "
+ 24. end
+
+. 
+. capture program drop first_coef_2SLS
+
+. program first_coef_2SLS
+  1.     syntax, in1(string) in2(string) OUTnames(string)
+  2.     local firstname : word 1 of `in1'
+  3.     
+.     forval j = 1/4 {
+  4.     local out`j' : word `j' of `outnames'
+  5.         if "`out`j''" == "" {
+  6.             local J = `j' - 1
+  7.             di "only `J' names in out(): 4 names expected"
+  8.             exit 498
+  9.         }
+ 10.     }
+ 11.     
+.     local trash : word 5 of `outnames'
+ 12.     if "`trash'" != "" {
+ 13.         di "trailing `trash' in out(): 4 names expected"
+ 14.         exit 498
+ 15.     }
+ 16.     
+.     c_local `out4' = `in2'
+ 17.     c_local `out1' = _b[`firstname']
+ 18.     c_local `out2' = _se[`firstname']
+ 19.     
+.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`firstname']/_se[`firstname']))
+ 20.     if `Pvalue' <= 0.01         c_local `out3' "***"  
+ 21.     else if `Pvalue' <= 0.05    c_local `out3' "**"
+ 22.     else if `Pvalue' <= 0.1     c_local `out3' "*"
+ 23.     else                        c_local `out3' " "
+ 24. end
+
+. 
+. * first_coef, in1(`e(cmdline)') in2(`e(N)') out(b1A se1A star1A N1A)
+. * first_two_coefs, in1(`e(cmdline)') in2(`e(N)') out(b11A b12A se11A se12A st
+> ar11A star12A N1A)
+. 
+. capture program drop first_two_coefs
+
+. program first_two_coefs
+  1.     syntax, in1(string) in2(string) OUTnames(string)
+  2.     local firstname : word 3 of `in1'
+  3.     local secondname : word 4 of `in1'
+  4.     
+.     forval j = 1/7 {
+  5.     local out`j' : word `j' of `outnames'
+  6.         if "`out`j''" == "" {
+  7.             local J = `j' - 1
+  8.             di "only `J' names in out(): 7 names expected"
+  9.             exit 498
+ 10.         }
+ 11.     }
+ 12.     
+.     local trash : word 8 of `outnames'
+ 13.     if "`trash'" != "" {
+ 14.         di "trailing `trash' in out(): 7 names expected"
+ 15.         exit 498
+ 16.     }
+ 17.     
+.     c_local `out7' = `in2'
+ 18.     c_local `out1' = _b[`firstname']
+ 19.     c_local `out2' = _b[`secondname']
+ 20.     c_local `out3' = _se[`firstname']
+ 21.     c_local `out4' = _se[`secondname']
+ 22.     
+.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`firstname']/_se[`firstname']))
+ 23.     if `Pvalue' <= 0.01         c_local `out5' "***"  
+ 24.     else if `Pvalue' <= 0.05    c_local `out5' "**"
+ 25.     else if `Pvalue' <= 0.1     c_local `out5' "*"
+ 26.     else                        c_local `out5' " "
+ 27.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`secondname']/_se[`secondname
+> ']))
+ 28.     if `Pvalue' <= 0.01         c_local `out6' "***"  
+ 29.     else if `Pvalue' <= 0.05    c_local `out6' "**"
+ 30.     else if `Pvalue' <= 0.1     c_local `out6' "*"
+ 31.     else                        c_local `out6' " "
+ 32. end
+
+. 
+. * first_eight_coefs, in1(`e(cmdline)') in2(`e(N)') out(b11A b12A b13A b14A b1
+> 5A b16A b17A b18A se11A se12A se13A se14A se15A se16A se17A se18A star11A sta
+> r12A star13A star14A star15A star16A star17A star18A N1A)
+. capture program drop first_eight_coefs
+
+. program first_eight_coefs
+  1.     syntax, in1(string) in2(string) OUTnames(string)
+  2.     local tester : word 3 of `in1'
+  3.     unab in1a : `tester'
+  4.     local firstname   : word 1 of `in1a'
+  5.     local secondname  : word 2 of `in1a'
+  6.     local thirdname   : word 3 of `in1a'
+  7.     local fourthname  : word 4 of `in1a'
+  8.     local fifthname   : word 5 of `in1a'
+  9.     local sixthname   : word 6 of `in1a'
+ 10.     local seventhname : word 7 of `in1a'
+ 11.     local eighthname  : word 8 of `in1a'
+ 12.     
+.     forval j = 1/25 {
+ 13.     local out`j' : word `j' of `outnames'
+ 14.         if "`out`j''" == "" {
+ 15.             local J = `j' - 1
+ 16.             di "only `J' names in out(): 25 names expected"
+ 17.             exit 498
+ 18.         }
+ 19.     }
+ 20.     
+.     local trash : word 26 of `outnames'
+ 21.     if "`trash'" != "" {
+ 22.         di "trailing `trash' in out(): 25 names expected"
+ 23.         exit 498
+ 24.     }
+ 25.     
+.     c_local `out25' = `in2'
+ 26.     c_local `out1'  = _b[`firstname']
+ 27.     c_local `out2'  = _b[`secondname']
+ 28.     c_local `out3'  = _b[`thirdname']
+ 29.     c_local `out4'  = _b[`fourthname']
+ 30.     c_local `out5'  = _b[`fifthname']
+ 31.     c_local `out6'  = _b[`sixthname']
+ 32.     c_local `out7'  = _b[`seventhname']
+ 33.     c_local `out8'  = _b[`eighthname']
+ 34.     c_local `out9'  = _se[`firstname']
+ 35.     c_local `out10' = _se[`secondname']
+ 36.     c_local `out11' = _se[`thirdname']
+ 37.     c_local `out12' = _se[`fourthname']
+ 38.     c_local `out13' = _se[`fifthname']
+ 39.     c_local `out14' = _se[`sixthname']
+ 40.     c_local `out15' = _se[`seventhname']
+ 41.     c_local `out16' = _se[`eighthname']
+ 42.     
+.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`firstname']/_se[`firstname']))
+ 43.     if `Pvalue' <= 0.01         c_local `out17' "***"  
+ 44.     else if `Pvalue' <= 0.05    c_local `out17' "**"
+ 45.     else if `Pvalue' <= 0.1     c_local `out17' "*"
+ 46.     else                        c_local `out17' " "
+ 47.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`secondname']/_se[`secondname
+> ']))
+ 48.     if `Pvalue' <= 0.01         c_local `out18' "***"  
+ 49.     else if `Pvalue' <= 0.05    c_local `out18' "**"
+ 50.     else if `Pvalue' <= 0.1     c_local `out18' "*"
+ 51.     else                        c_local `out18' " "
+ 52.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`thirdname']/_se[`thirdname']
+> ))
+ 53.     if `Pvalue' <= 0.01         c_local `out19' "***"  
+ 54.     else if `Pvalue' <= 0.05    c_local `out19' "**"
+ 55.     else if `Pvalue' <= 0.1     c_local `out19' "*"
+ 56.     else                        c_local `out19' " "
+ 57.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`fourthname']/_se[`fourthname
+> ']))
+ 58.     if `Pvalue' <= 0.01         c_local `out20' "***"  
+ 59.     else if `Pvalue' <= 0.05    c_local `out20' "**"
+ 60.     else if `Pvalue' <= 0.1     c_local `out20' "*"
+ 61.     else                        c_local `out20' " "
+ 62.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`fifthname']/_se[`fifthname']
+> ))
+ 63.     if `Pvalue' <= 0.01         c_local `out21' "***"  
+ 64.     else if `Pvalue' <= 0.05    c_local `out21' "**"
+ 65.     else if `Pvalue' <= 0.1     c_local `out21' "*"
+ 66.     else                        c_local `out21' " "
+ 67.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`sixthname']/_se[`sixthname']
+> ))
+ 68.     if `Pvalue' <= 0.01         c_local `out22' "***"  
+ 69.     else if `Pvalue' <= 0.05    c_local `out22' "**"
+ 70.     else if `Pvalue' <= 0.1     c_local `out22' "*"
+ 71.     else                        c_local `out22' " "
+ 72.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`seventhname']/_se[`seventhna
+> me']))
+ 73.     if `Pvalue' <= 0.01         c_local `out23' "***"  
+ 74.     else if `Pvalue' <= 0.05    c_local `out23' "**"
+ 75.     else if `Pvalue' <= 0.1     c_local `out23' "*"
+ 76.     else                        c_local `out23' " "
+ 77.     local Pvalue = 2 * ttail(e(df_r), abs(_b[`eighthname']/_se[`eighthname
+> ']))
+ 78.     if `Pvalue' <= 0.01         c_local `out24' "***"  
+ 79.     else if `Pvalue' <= 0.05    c_local `out24' "**"
+ 80.     else if `Pvalue' <= 0.1     c_local `out24' "*"
+ 81.     else                        c_local `out24' " "
+ 82. end
+
+. 
+. *Sensitivity Analysis for Main Results Begins Here
+. qui sum stem_maj  [aweight=perwt] if ed16plus & female==0 & black==1 & inrang
+> e(yearage18,1982,1985) & ~inlist(bpl,13,5,38,29)
+
+. local mu1A  = `r(mean)'
+
+. qui sum emp_stemocc  [aweight=perwt] if stem_maj & female==0 & black==0 & inr
+> ange(yearage18,1982,1985) & ~inlist(bpl,13,5,38,29)
+
+. local mu2A  = `r(mean)'
+
+. qui sum workedly  [aweight=perwt] if stem_maj & female==1 & black==0 & inrang
+> e(yearage18,1982,1985) & ~inlist(bpl,13,5,38,29)
+
+. local mu3A  = `r(mean)'
+
+. 
+. *Table: Main Results Using Base Specification
+. qui reg stem_maj forshr_16pl_stemo_80_2559_p8689 forshr_16pl_stemo_80_2559_p9
+> 194 i.bpl##c.yearage18  lnpop18 unemprate_styr lnmedhhinc18 yeardum* agedum* 
+> yearbirthdum*   [aweight=perwt] if female==0 &  black==1    & inrange(yearage
+> 18,1982,1994) & ~inlist(yearage18,1990) & ~inlist(bpl,13,5,38,29) & ed16plus=
+> =1 , cluster(bpl)
+
+. first_two_coefs, in1(`e(cmdline)') in2(`e(N)') out(b11A b12A se11A se12A star
+> 11A star12A N1A)
+
+. est sto regA
+
+. * outreg using ${outreg_path}IStableS0.doc, replace se starlevels(10 5 1) sta
+> rloc(1)
+. qui reg emp_stemocc  forshr_16pl_stemo_80_2559_p8689 forshr_16pl_stemo_80_255
+> 9_p9194 i.bpl##c.yearage18  lnpop18 unemprate_styr lnmedhhinc18 yeardum* aged
+> um* yearbirthdum*   [aweight=perwt] if female==0 &  white==1    & inrange(yea
+> rage18,1982,1994) & ~inlist(yearage18,1990) & ~inlist(bpl,13,5,38,29) & ed16p
+> lus==1 & stem_maj==1, cluster(bpl)
+
+. first_two_coefs, in1(`e(cmdline)') in2(`e(N)') out(b11B b12B se11B se12B star
+> 11B star12B N1B)
+
+. est sto regB
+
+. * outreg using ${outreg_path}IStableS0.doc, append   se starlevels(10 5 1) st
+> arloc(1)
+. qui reg workedly forshr_16pl_stemo_80_2559_p8689 forshr_16pl_stemo_80_2559_p9
+> 194 i.bpl##c.yearage18  lnpop18 unemprate_styr lnmedhhinc18 yeardum* agedum* 
+> yearbirthdum*   [aweight=perwt] if female==1 &  white==1    & inrange(yearage
+> 18,1982,1994) & ~inlist(yearage18,1990) & ~inlist(bpl,13,5,38,29) & ed16plus=
+> =1 & stem_maj==1, cluster(bpl)
+
+. first_two_coefs, in1(`e(cmdline)') in2(`e(N)') out(b11C b12C se11C se12C star
+> 11C star12C N1C)
+
+. est sto regC
+
+. * outreg using ${outreg_path}IStableS0.doc, append   se starlevels(10 5 1) st
+> arloc(1)
+. est table regA regB regC , b(%9.3f) se(%9.3f) stats(N) keep(forshr_16pl_stemo
+> _80_2559_p*) title("Table S000: Re-print main results on black male STEM majo
+> r, white male STEM occupation, white female employment")
+
+Table S000: Re-print main results on black male STEM major, white male STEM
+occupation, white female employment
+
+--------------------------------------------------
+    Variable |   regA        regB        regC     
+-------------+------------------------------------
+forshr_16p.. |     0.021      -0.009      -0.026  
+             |     0.035       0.010       0.012  
+forshr_16p.. |    -0.023      -0.037      -0.053  
+             |     0.060       0.022       0.022  
+-------------+------------------------------------
+           N |     21865      115843       56205  
+--------------------------------------------------
+                                      legend: b/se
+
+. 
+. capture file close TA00
+
+. file open TA00 using "${table_path}TA000.tex", write replace
+
+. file write TA00 "\begin{table}[ht]" _n 
+
+. file write TA00 "\caption{Treatment of pre-1990 cohorts}" _n 
+
+. file write TA00 "\label{tab:ta000}" _n 
+
+. file write TA00 "\centering" _n 
+
+. file write TA00 "\begin{threeparttable}" _n 
+
+. file write TA00 "\begin{tabular}{lccc}" _n 
+
+. file write TA00 "\toprule " _n 
+
+. file write TA00 "       & Black           & White        & White       \\" _n
+>  
+
+. file write TA00 "       & Male            & Male         & Female      \\" _n
+>  
+
+. file write TA00 "Effect & STEM BA         & STEM Occ.    & Prior Yr Empl.\\" 
+> _n 
+
+. file write TA00 "\midrule " _n 
+
+. file write TA00 "Foreign STEM Exposure, 86-89 cohorts" " & " %4.3f (`b11A') "
+> `star11A'" " & " %4.3f (`b11B') "`star11B'" " & " %4.3f (`b11C') "`star11C'" 
+> " \\ "  _n 
+
+. file write TA00                         " &  (" %4.3f (`se11A') ")        & (
+> " %4.3f  (`se11B') ")        & (" %4.3f  (`se11C') ") \\ "  _n 
+
+. file write TA00 "Foreign STEM Exposure, 91-94 cohorts" " & " %4.3f (`b12A') "
+> `star12A'" " & " %4.3f (`b12B') "`star12B'" " & " %4.3f (`b12C') "`star12C'" 
+> " \\ "  _n 
+
+. file write TA00                         " &  (" %4.3f (`se12A') ")        & (
+> " %4.3f  (`se12B') ")        & (" %4.3f  (`se12C') ") \\ "  _n 
+
+. file write TA00 "Control mean"          " &  [" %4.3f (`mu1A') "]           &
+>  [" %4.3f  (`mu2A') "]         & [" %4.3f  (`mu3A')  "] \\ "  _n 
+
+. file write TA00 "\emph{N}"              " &  " %9.0gc (`N1A') "          & " 
+> %9.0gc  (`N1B') "          & " %9.0gc  (`N1C') " \\ "  _n 
+
+. file write TA00 "\bottomrule " _n 
+
+. file write TA00 "\end{tabular} " _n 
+
+. file write TA00 "\footnotesize Note: This table presents results from a setti
+> ng where we consider individuals who turn 18 years old between 1982-1994, wit
+> h 1990 as the year the policy was instituted. Individuals turning 18 in 1986-
+> 1989 are considered to be one treatment group, those turning 18 in 1991-1994 
+> as a different treatment group, and those turning 18 in 1982-1985 serve as co
+> ntrols. The reported estimates should be compared with those reported in the 
+> first column of Table \ref{tab:STEMgradUncond} Panel C, the third column of T
+> able \ref{tab:STEMoccEmpAll} Panel B, and the last column of Table \ref{tab:P
+> robLY} Panel B." _n 
+
+. file write TA00 "\end{threeparttable} " _n 
+
+. file write TA00 "\end{table} " _n 
+
+. file close TA00
+
+. 
+. 
+. 
+. log close
+      name:  <unnamed>
+       log:  /home/data/ransom/CollegeMaj/ACS-immigration/Analysis/effectsIA90a
+> nalysisISdblplacebo.log
+  log type:  text
+ closed on:  20 Nov 2018, 17:14:41
+-------------------------------------------------------------------------------
